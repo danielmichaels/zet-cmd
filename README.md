@@ -1,4 +1,4 @@
-# Zet-CMD
+# Zet-cmd
 
 [![License](https://img.shields.io/badge/license-Apache2-brightgreen.svg)](LICENSE)
 

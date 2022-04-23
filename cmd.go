@@ -14,7 +14,7 @@ var Cmd = &Z.Cmd{
 
 	Name:      `zet`,
 	Summary:   `zettelkasten commander`,
-	Version:   `v0.0.1`,
+	Version:   `v0.0.2`,
 	Copyright: `Copyright 2022 Daniel Michaels`,
 	License:   `Apache-2.0`,
 	Site:      `danielms.site`,
