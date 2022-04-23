@@ -24,7 +24,7 @@ var (
 	GitUser     = os.Getenv("GITUSER")
 	GitBranch   = "main"
 	RepoName    = "zet"
-	GitRepo     = filepath.Join(os.Getenv("HOME"), "Code", "github")
+	GitRepo     = filepath.Join(os.Getenv("HOME"), os.Getenv("REPOS"))
 	Pictures    = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Screenshots = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Downloads   = filepath.Join(os.Getenv("HOME"), "Downloads")
