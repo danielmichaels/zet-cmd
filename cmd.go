@@ -30,6 +30,7 @@ var Cmd = &Z.Cmd{
 		help.Cmd, conf.Cmd, vars.Cmd,
 
 		// local commands (in this module)
+		Create, Latest, Edit, Get,
 	},
 
 	// Add custom BonzaiMark template extensions (or overwrite existing ones).
@@ -132,7 +133,4 @@ var Cmd = &Z.Cmd{
 			a book for other output renderers later (HTML, PDF, etc.)`,
 		},
 	},
-
-	// no Call since has Commands, if had Call would only call if
-	// commands didn't match
 }
