@@ -4,9 +4,7 @@ go 1.18
 
 require (
 	github.com/rwxrob/bonzai v0.12.2
-	github.com/rwxrob/compfile v0.1.10
 	github.com/rwxrob/conf v0.6.3
-	github.com/rwxrob/config v0.4.3
 	github.com/rwxrob/help v0.4.2
 	github.com/rwxrob/vars v0.3.2
 )
