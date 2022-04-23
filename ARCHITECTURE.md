@@ -81,3 +81,7 @@ Finding the last Zet could probably be achieved by identifying the latest dir fr
 This could be a search option for reading or finding a Zet to edit
 
 ## Notes
+Todo:
+
+- Git Pull the repo (incase it gets out of sync)
+- Delete zet (saves needing to do it in browser or using `git`

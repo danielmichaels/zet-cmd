@@ -10,7 +10,6 @@ import (
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"io/ioutil"
-	"log"
 	url2 "net/url"
 	"os"
 	"path/filepath"
@@ -85,31 +84,6 @@ var Get = &Z.Cmd{
 	},
 }
 
-func (z *Zet) GetZet(zet string) (string, error) {
-	r, _ := regexp.Compile("^[0-9]{14,}$")
-	l, _ := regexp.Compile("last")
-	switch {
-	case l.MatchString(zet):
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return "", err
-		}
-		l, err := z.Last()
-		if err != nil {
-			return "", err
-		}
-		return l, nil
-	case r.MatchString(zet):
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return "", err
-		}
-		return zet, nil
-	default:
-		return "", errors.New("invalid entry, or zet not found")
-	}
-}
-
 var Edit = &Z.Cmd{
 	Name:     `edit`,
 	Aliases:  []string{"e"},
@@ -146,20 +120,18 @@ var Edit = &Z.Cmd{
 			fmt.Printf("%q not commited but modified\n", zet)
 			return nil
 		}
-		log.Println("y and pullAddCommitPush next")
 		z.Path = filepath.Join(z.GetRepo(), zet)
 		err = z.PullAddCommitPush()
 		if err != nil {
-			println("PACP", err.Error())
 			return err
 		}
 		return nil
 	},
 }
 
-var Latest = &Z.Cmd{
-	Name:     `latest`,
-	Aliases:  []string{"last"},
+var Last = &Z.Cmd{
+	Name:     `last`,
+	Aliases:  []string{"l", "latest"},
 	Summary:  `Get the most recent zet`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
@@ -308,6 +280,31 @@ func (z *Zet) GetTitle() error {
 		return err
 	}
 	return nil
+}
+
+func (z *Zet) GetZet(zet string) (string, error) {
+	r, _ := regexp.Compile("^[0-9]{14,}$")
+	l, _ := regexp.Compile("last")
+	switch {
+	case l.MatchString(zet):
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return "", err
+		}
+		l, err := z.Last()
+		if err != nil {
+			return "", err
+		}
+		return l, nil
+	case r.MatchString(zet):
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return "", err
+		}
+		return zet, nil
+	default:
+		return "", errors.New("invalid entry, or zet not found")
+	}
 }
 
 func (z *Zet) CreateReadme(r Zet, path string) error {
