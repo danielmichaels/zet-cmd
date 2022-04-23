@@ -11,6 +11,7 @@ import (
 	"github.com/rwxrob/help"
 	"io/ioutil"
 	"log"
+	url2 "net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -174,6 +175,20 @@ var Latest = &Z.Cmd{
 		}
 		z.Latest = last
 		fmt.Printf("%s", z.Latest)
+		return nil
+	},
+}
+var Query = &Z.Cmd{
+	Name:     `query`,
+	Aliases:  []string{"q"},
+	Summary:  `Create a searchable URL with a query string`,
+	MinArgs:  1,
+	Usage:    `must provide a search term`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		term := url2.QueryEscape(args[0])
+		url := fmt.Sprintf("https://github.com/%s/%s/search?q=%s", GitUser, RepoName, term)
+		fmt.Println(url)
 		return nil
 	},
 }
