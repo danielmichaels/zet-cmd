@@ -192,13 +192,87 @@ var Query = &Z.Cmd{
 		return nil
 	},
 }
+var Find = &Z.Cmd{
+	Name:     `find`,
+	Aliases:  []string{"f"},
+	Summary:  `Find a zet title by search term`,
+	MinArgs:  1,
+	Usage:    `must provide a search term`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return err
+		}
+		dir, _ := os.Getwd()
+		files, err := z.ReadDir(dir)
+		if err != nil {
+			return err
+		}
+		titles, err := z.FindTitles(files)
+		if err != nil {
+			return err
+		}
+		results, err := z.SearchTitles(args[0], titles)
+		if err != nil {
+			return err
+		}
+		for _, v := range results {
+			fmt.Println(v.Id, v.Title)
+		}
+		return nil
+	},
+}
 
 // view
 
 // screenshot
 
-// utilities
+// Title holds the id and title for a given Zet when searching the filesystem
+type Title struct {
+	Id    string
+	Title string
+}
 
+// FindTitles searches through a slice of files inspecting the title (in Zet
+// parlance this is the first line of a Readme) and returns a slice of Title
+func (z *Zet) FindTitles(files []string) ([]Title, error) {
+	var titles []Title
+	for _, t := range files {
+		z.Path = t
+		err := z.GetTitle()
+		if err != nil {
+			return nil, err
+		}
+		title := Title{
+			Id:    t,
+			Title: z.Title,
+		}
+		titles = append(titles, title)
+	}
+	return titles, nil
+}
+
+// SearchTitles searches through a slice of Title for any matching query element.
+// The search uses strings.Contains and will match partials within a string.
+func (z *Zet) SearchTitles(query string, titles []Title) ([]Title, error) {
+	var results []Title
+	for i, t := range titles {
+		if strings.Contains(strings.ToLower(titles[i].Title), query) {
+			r := Title{
+				Id:    t.Id,
+				Title: t.Title,
+			}
+			results = append(results, r)
+		}
+	}
+	return results, nil
+}
+
+// Zet is the struct to hang methods from which are used to create, edit, find
+// and delete Zet's.
 type Zet struct {
 	Title  string
 	Path   string
@@ -242,9 +316,25 @@ func (z *Zet) CreateReadme(r Zet, path string) error {
 	if err != nil {
 		return err
 	}
-	//z.Title =
 	z.Path = path
 	return nil
+}
+
+// ReadDir reads all files within a given path excluding the .git repo
+func (z *Zet) ReadDir(path string) ([]string, error) {
+	var files []string
+	fileInfo, err := ioutil.ReadDir(path)
+	if err != nil {
+		return files, err
+	}
+
+	for _, file := range fileInfo {
+		if file.Name() == ".git" {
+			continue
+		}
+		files = append(files, file.Name())
+	}
+	return files, nil
 }
 
 // CreateDir creates a directory inside the zet repository using the Isosec
@@ -257,6 +347,9 @@ func (z *Zet) CreateDir() (string, error) {
 	}
 	return path, nil
 }
+
+// ChangeDir must be called during any git operation otherwise the git command
+// cannot be called within the zet repo reliably
 func (z *Zet) ChangeDir(path string) error {
 	err := os.Chdir(path)
 	if err != nil {

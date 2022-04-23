@@ -30,7 +30,7 @@ var Cmd = &Z.Cmd{
 		help.Cmd, conf.Cmd, vars.Cmd,
 
 		// local commands (in this module)
-		Create, Latest, Edit, Get, Query,
+		Create, Latest, Edit, Get, Query, Find,
 	},
 
 	// Add custom BonzaiMark template extensions (or overwrite existing ones).
