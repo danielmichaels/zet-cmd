@@ -548,7 +548,7 @@ func Isosec() string {
 // mkdir is the functional equivlent of 'mkdir -p' and is used to create new
 // folders recursively.
 func mkdir(path string) error {
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0664)
 	if err != nil {
 		return err
 	}
