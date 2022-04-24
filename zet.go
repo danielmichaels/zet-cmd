@@ -9,6 +9,7 @@ import (
 	"fmt"
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
+	"github.com/rwxrob/term"
 	"io/ioutil"
 	url2 "net/url"
 	"os"
@@ -193,6 +194,20 @@ var Find = &Z.Cmd{
 		}
 		for _, v := range results {
 			fmt.Println(v.Id, v.Title)
+		}
+		return nil
+	},
+}
+
+var Check = &Z.Cmd{
+	Name:     `check`,
+	Summary:  `Check environment variables and configuration`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		err := z.CheckZetConfig()
+		if err != nil {
+			return err
 		}
 		return nil
 	},
@@ -411,6 +426,8 @@ func (z *Zet) Push() error {
 	return nil
 }
 
+// PullAddCommitPush is a helper method which flows through a Git workflow
+// and is called often in Commands such as `create` and `edit`.
 func (z *Zet) PullAddCommitPush() error {
 	err := z.GetTitle()
 	if err != nil {
@@ -434,6 +451,8 @@ func (z *Zet) PullAddCommitPush() error {
 	}
 	return nil
 }
+
+// GitRemote checks for the existence of a non-empty `git remote -v` response.
 func (z *Zet) GitRemote() error {
 	if os.Getenv("GIT_REMOTE") != "" {
 		return nil
@@ -445,8 +464,9 @@ func (z *Zet) GitRemote() error {
 	return nil
 }
 
+// Last inspects the Zet repo directories (Isosec folders) and returns the
+// most recent directory.
 func (z *Zet) Last() (string, error) {
-	// todo(ds) should this return error and set z.Path = last?
 	files, _ := ioutil.ReadDir(z.GetRepo())
 	var last string
 	var newest int64 = 0
@@ -467,11 +487,54 @@ func (z *Zet) Last() (string, error) {
 	return last, nil
 }
 
-// interfaces
-type GitCmds interface {
-	Commit() error
-	Push() error
-	Pull() error
+// CheckZetConfig outputs important information about the executable's
+// configuration such as environment variables and directory paths. This is
+// useful for debugging issues with the host system or failures for the exe
+// to commit to GitHub successfully.
+func (z *Zet) CheckZetConfig() error {
+	fmt.Println(term.U + term.Green + "Checking Zet Config" + term.Reset)
+	// System variables
+	fmt.Println(term.Blue + "Editor: " + term.Reset + Editor)
+	fmt.Println(term.Blue + "Pager: " + term.Reset + Pager)
+	// Git/Repo variables
+	fmt.Println(term.U + term.Yellow + "Repository Variables" + term.Reset)
+	fmt.Println(term.Blue + "RepoName: " + term.Reset + RepoName)
+	REPOS := os.Getenv("REPOS")
+	if REPOS == "" {
+		REPOS = term.Red + "Variable not set. Must point to the `zet` git repo locally." + term.Reset
+	}
+	fmt.Println(term.Blue + "Repos Variable: " + term.Reset + REPOS)
+	fmt.Println(term.Blue + "GitUser: " + term.Reset + GitUser)
+	fmt.Println(term.Blue + "GitRepo: " + term.Reset + GitRepo)
+	fmt.Println(term.Blue + "System Zet Repo: " + term.Reset + z.GetRepo())
+	// Future use case info
+	fmt.Println(term.U + term.Yellow + "Utility Directories" + term.Reset)
+	fmt.Println(term.Blue + "Pictures Directory: " + term.Reset + Pictures)
+	fmt.Println(term.Blue + "Screenshots Directory:" + term.Reset + Screenshots)
+	fmt.Println(term.Blue + "Downloads Directory: " + term.Reset + Downloads)
+	// Check directories exist
+	fmt.Println(term.U + term.Yellow + "Directories Exist" + term.Reset)
+	_, err := os.Stat(z.GetRepo())
+	zetRepo := "true"
+	if err != nil {
+		zetRepo = term.Red + "false" + term.Reset
+	}
+	fmt.Println(term.Blue + "Zet Git Repo Exists: " + term.Reset + fmt.Sprintf("%s", zetRepo))
+	if zetRepo == term.Red+"false"+term.Reset {
+		fmt.Println(term.Blue + "Zet GitHub Remote: " + term.Red + "Zet repo does not exist on host" + term.Reset)
+		return nil
+	}
+	err = z.ChangeDir(z.GetRepo())
+	if err != nil {
+		return err
+	}
+	err = z.GitRemote()
+	zetRemote := "true"
+	if err != nil {
+		zetRemote = term.Red + "false" + term.Reset
+	}
+	fmt.Println(term.Blue + "Zet GitHub Remote: " + term.Reset + fmt.Sprintf("%s", zetRemote))
+	return nil
 }
 
 // Isosec returns the GMT current time in ISO8601 (RFC3339) without

@@ -31,13 +31,28 @@ var Cmd = &Z.Cmd{
 
 ## Requirements
 
-`zet-cmd` must have a GitHub repository to push commits to named `zet`.  
+`zet-cmd` must have a GitHub repository to push commits to named `zet`. For instance, my 
+personal `zet` repository is [github.com/danielmichaels/zet][ghzet]. Without this `zet` will not 
+have a remote repository to commit to.
+
+On a new machine (but existing `zet` repo), you will need to `git clone` to the new device first.
 
 ### Environment Variables
 
 - `EDITOR` must be set to create and edit Zet's.
 - `GITUSER` must be your GitHub account username
 - `REPOS` should point to location of your code repos. e.g. `$HOME/Code/github`. Without this `zet` cannot find the directory or files
+
+The `REPOS` environment variable is important as it is used to find the directory of your `zet` 
+repository. It is the `zet` repo which stores all the commits - see the note to identify if the 
+directory paths and environment variables are set correctly before attempting to `zet create` or 
+`edit`.
+
+**📣 Note**
+
+`zet-cmd` has a `check` command which will output the required environment variables and directory
+paths. Any `false` values or empty `Repo` entries will need to be rectified or your `zet-cmd` may
+not function as expected, or at all.
 
 ## Tab Completion
 
@@ -61,3 +76,6 @@ access it.
 ## Other Examples
 
 * <https://github.com/rwxrob/cmd-zet> - with heavy inspiration
+* <https://github.com/danielmichaels/ds> - my personal Bonzai commander
+ 
+[ghzet]: https://github.com/danielmichaels/zet
