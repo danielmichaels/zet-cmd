@@ -84,4 +84,5 @@ This could be a search option for reading or finding a Zet to edit
 Todo:
 
 - Git Pull the repo (incase it gets out of sync)
-- Delete zet (saves needing to do it in browser or using `git`
+- Delete zet (saves needing to do it in browser or using `git`)
+- Search tags

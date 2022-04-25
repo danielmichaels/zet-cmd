@@ -198,6 +198,62 @@ var Find = &Z.Cmd{
 		return nil
 	},
 }
+var Tags = &Z.Cmd{
+	Name:     `tags`,
+	Aliases:  []string{"t"},
+	Summary:  `Find zet(s) by tag'`,
+	MinArgs:  1,
+	Usage:    `must provide a search term`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return err
+		}
+		dir, _ := os.Getwd()
+		files, err := z.ReadDir(dir)
+		if err != nil {
+			return err
+		}
+		results, err := z.FindTags(args[0], files)
+		if err != nil {
+			return err
+		}
+		for _, v := range results {
+			fmt.Println(v.Id, v.Title)
+		}
+
+		return nil
+	},
+}
+
+// FindTags takes a tag and array of files and then searches the files for the
+// tag. Any matches are returned as a slice of Title structs containing the
+// Id and Title of the file with the match.
+func (z *Zet) FindTags(tag string, files []string) ([]Title, error) {
+	var titles []Title
+	for _, t := range files {
+		z.Path = t
+		tag, err := z.SearchTags(tag)
+		if err != nil {
+			return nil, err
+		}
+		if !tag {
+			continue
+		}
+		err = z.GetTitle()
+		if err != nil {
+			return nil, err
+		}
+		title := Title{
+			Id:    t,
+			Title: z.Title,
+		}
+		titles = append(titles, title)
+	}
+	return titles, nil
+}
 
 var Check = &Z.Cmd{
 	Name:     `check`,
@@ -212,8 +268,6 @@ var Check = &Z.Cmd{
 		return nil
 	},
 }
-
-// view
 
 // screenshot
 
@@ -273,6 +327,26 @@ func (z *Zet) GetRepo() string { return filepath.Join(GitRepo, RepoName) }
 // is used to retrieve the full path to the README.md being written to or read from.
 func (z *Zet) GetReadme(path string) string { return filepath.Join(path, "README.md") }
 
+// SearchTags scans an open file for a tag and uses regexp to find any matches.
+// Matching tags return a truthy boolean.
+func (z *Zet) SearchTags(tag string) (bool, error) {
+	reg := regexp.MustCompile(fmt.Sprintf("(#%s+)", tag))
+	f, _ := os.Open(z.GetReadme(z.Path))
+	defer f.Close()
+	s := bufio.NewScanner(f)
+	hit := false
+	for s.Scan() {
+		match := reg.MatchString(s.Text())
+		if match {
+			hit = true
+		}
+	}
+	if err := s.Err(); err != nil {
+		return false, err
+	}
+	return hit, nil
+}
+
 // GetTitle inspects the Zet README.md from the z.Path and retrieves the
 // h1 title. This ensures that the title is up-to-date as it may have been
 // altered after its initial creation.
@@ -298,8 +372,8 @@ func (z *Zet) GetTitle() error {
 }
 
 func (z *Zet) GetZet(zet string) (string, error) {
-	r, _ := regexp.Compile("^[0-9]{14,}$")
-	l, _ := regexp.Compile("last")
+	r := regexp.MustCompile("^[0-9]{14,}$")
+	l := regexp.MustCompile("last")
 	switch {
 	case l.MatchString(zet):
 		err := z.ChangeDir(z.GetRepo())
@@ -548,7 +622,7 @@ func Isosec() string {
 // mkdir is the functional equivlent of 'mkdir -p' and is used to create new
 // folders recursively.
 func mkdir(path string) error {
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(path, 0664)
 	if err != nil {
 		return err
 	}
