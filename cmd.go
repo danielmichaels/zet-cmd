@@ -14,7 +14,7 @@ var Cmd = &Z.Cmd{
 
 	Name:      `zet`,
 	Summary:   `zettelkasten commander`,
-	Version:   `v0.0.3`,
+	Version:   `v0.0.4`,
 	Copyright: `Copyright 2022 Daniel Michaels`,
 	License:   `Apache-2.0`,
 	Site:      `danielms.site`,
@@ -26,7 +26,7 @@ var Cmd = &Z.Cmd{
 		help.Cmd, conf.Cmd, vars.Cmd,
 
 		// local commands (in this module)
-		Create, Last, Edit, Get, Query, Find, Check,
+		Create, Last, Edit, Get, Query, Find, Check, Tags,
 	},
 	Description: `
 		The **{{.Name}}** command is Zettelkasten Bonzai branch used to create
