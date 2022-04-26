@@ -47,7 +47,6 @@ var Create = &Z.Cmd{
 		}
 		z.Path = dir
 
-		println(dir)
 		err = z.CreateReadme(z, dir)
 		if err != nil {
 			return err
@@ -398,7 +397,7 @@ func (z *Zet) GetZet(zet string) (string, error) {
 
 func (z *Zet) CreateReadme(r Zet, path string) error {
 	f := []byte(fmt.Sprintf("# %s\n\n", z.Title))
-	err := os.WriteFile(r.GetReadme(path), f, 0755)
+	err := os.WriteFile(r.GetReadme(path), f, 0664)
 	if err != nil {
 		return err
 	}
@@ -619,10 +618,10 @@ func Isosec() string {
 	return fmt.Sprintf("%v", time.Now().In(time.UTC).Format("20060102150405"))
 }
 
-// mkdir is the functional equivlent of 'mkdir -p' and is used to create new
+// mkdir is the functional equivalent of 'mkdir -p' and is used to create new
 // folders recursively.
 func mkdir(path string) error {
-	err := os.MkdirAll(path, 0664)
+	err := os.MkdirAll(path, 0755)
 	if err != nil {
 		return err
 	}
