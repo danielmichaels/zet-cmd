@@ -31,7 +31,7 @@ var (
 	Downloads   = filepath.Join(os.Getenv("HOME"), "Downloads")
 )
 
-var Create = &Z.Cmd{
+var CreateCmd = &Z.Cmd{
 	Name:     `create`,
 	Aliases:  []string{"new", "c"},
 	Summary:  `Create a new zet`,
@@ -65,7 +65,7 @@ var Create = &Z.Cmd{
 		return nil
 	},
 }
-var Get = &Z.Cmd{
+var GetCmd = &Z.Cmd{
 	Name:     `get`,
 	Aliases:  []string{"g"},
 	Summary:  `Retrieve a zet for editing`,
@@ -84,55 +84,10 @@ var Get = &Z.Cmd{
 	},
 }
 
-var Edit = &Z.Cmd{
-	Name:     `edit`,
-	Aliases:  []string{"e"},
-	Summary:  `Edit a zet`,
-	MinArgs:  1,
-	Usage:    `must provide a zet isosec value`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		zet, err := z.GetZet(args[0])
-		if err != nil {
-			return err
-		}
-		file := filepath.Join(zet, "README.md")
-		err = Z.Exec(Editor, file)
-		if err != nil {
-			return err
-		}
-
-		var r string
-		fmt.Printf("Commit? y/N ")
-		_, err = fmt.Scanln(&r)
-		if err != nil {
-			// <Enter> will return the following error, so we mark it as "N".
-			if err.Error() != "unexpected newline" {
-				return err
-			}
-			r = "N"
-		}
-		r = strings.TrimSpace(r)
-		r = strings.ToLower(r)
-
-		if r != "y" {
-			fmt.Printf("%q not commited but modified\n", zet)
-			return nil
-		}
-		z.Path = filepath.Join(z.GetRepo(), zet)
-		err = z.PullAddCommitPush()
-		if err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-var Last = &Z.Cmd{
+var LastCmd = &Z.Cmd{
 	Name:     `last`,
 	Aliases:  []string{"l", "latest"},
-	Summary:  `Get the most recent zet`,
+	Summary:  `Get the most recent zet isosec and print it screen`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
@@ -150,7 +105,7 @@ var Last = &Z.Cmd{
 		return nil
 	},
 }
-var Query = &Z.Cmd{
+var QueryCmd = &Z.Cmd{
 	Name:     `query`,
 	Aliases:  []string{"q"},
 	Summary:  `Create a searchable URL with a query string`,
@@ -164,7 +119,7 @@ var Query = &Z.Cmd{
 		return nil
 	},
 }
-var Find = &Z.Cmd{
+var FindCmd = &Z.Cmd{
 	Name:     `find`,
 	Aliases:  []string{"f"},
 	Summary:  `Find a zet title by search term`,
@@ -197,7 +152,7 @@ var Find = &Z.Cmd{
 		return nil
 	},
 }
-var Tags = &Z.Cmd{
+var TagsCmd = &Z.Cmd{
 	Name:     `tags`,
 	Aliases:  []string{"t"},
 	Summary:  `Find zet(s) by tag'`,
@@ -254,7 +209,7 @@ func (z *Zet) FindTags(tag string, files []string) ([]Title, error) {
 	return titles, nil
 }
 
-var Check = &Z.Cmd{
+var CheckCmd = &Z.Cmd{
 	Name:     `check`,
 	Summary:  `Check environment variables and configuration`,
 	Commands: []*Z.Cmd{help.Cmd},
