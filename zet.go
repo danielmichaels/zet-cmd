@@ -31,7 +31,7 @@ var (
 	Downloads   = filepath.Join(os.Getenv("HOME"), "Downloads")
 )
 
-var Create = &Z.Cmd{
+var CreateCmd = &Z.Cmd{
 	Name:     `create`,
 	Aliases:  []string{"new", "c"},
 	Summary:  `Create a new zet`,
@@ -53,19 +53,20 @@ var Create = &Z.Cmd{
 		}
 
 		// Drop into vim and write Zet contents
-		err = Z.Exec(Editor, z.GetReadme(z.Path))
+		zet := z.GetReadme(z.Path)
+		err = Z.Exec(Editor, zet)
 		if err != nil {
 			return err
 		}
-		err = z.PullAddCommitPush()
+		err = z.scanAndCommit(z.Path)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Committing %q\n", z.Title)
 		return nil
 	},
 }
-var Get = &Z.Cmd{
+
+var GetCmd = &Z.Cmd{
 	Name:     `get`,
 	Aliases:  []string{"g"},
 	Summary:  `Retrieve a zet for editing`,
@@ -84,55 +85,10 @@ var Get = &Z.Cmd{
 	},
 }
 
-var Edit = &Z.Cmd{
-	Name:     `edit`,
-	Aliases:  []string{"e"},
-	Summary:  `Edit a zet`,
-	MinArgs:  1,
-	Usage:    `must provide a zet isosec value`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		zet, err := z.GetZet(args[0])
-		if err != nil {
-			return err
-		}
-		file := filepath.Join(zet, "README.md")
-		err = Z.Exec(Editor, file)
-		if err != nil {
-			return err
-		}
-
-		var r string
-		fmt.Printf("Commit? y/N ")
-		_, err = fmt.Scanln(&r)
-		if err != nil {
-			// <Enter> will return the following error, so we mark it as "N".
-			if err.Error() != "unexpected newline" {
-				return err
-			}
-			r = "N"
-		}
-		r = strings.TrimSpace(r)
-		r = strings.ToLower(r)
-
-		if r != "y" {
-			fmt.Printf("%q not commited but modified\n", zet)
-			return nil
-		}
-		z.Path = filepath.Join(z.GetRepo(), zet)
-		err = z.PullAddCommitPush()
-		if err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-var Last = &Z.Cmd{
+var LastCmd = &Z.Cmd{
 	Name:     `last`,
 	Aliases:  []string{"l", "latest"},
-	Summary:  `Get the most recent zet`,
+	Summary:  `Get the most recent zet isosec and print it screen`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
@@ -150,7 +106,8 @@ var Last = &Z.Cmd{
 		return nil
 	},
 }
-var Query = &Z.Cmd{
+
+var QueryCmd = &Z.Cmd{
 	Name:     `query`,
 	Aliases:  []string{"q"},
 	Summary:  `Create a searchable URL with a query string`,
@@ -164,7 +121,8 @@ var Query = &Z.Cmd{
 		return nil
 	},
 }
-var Find = &Z.Cmd{
+
+var FindCmd = &Z.Cmd{
 	Name:     `find`,
 	Aliases:  []string{"f"},
 	Summary:  `Find a zet title by search term`,
@@ -197,7 +155,8 @@ var Find = &Z.Cmd{
 		return nil
 	},
 }
-var Tags = &Z.Cmd{
+
+var TagsCmd = &Z.Cmd{
 	Name:     `tags`,
 	Aliases:  []string{"t"},
 	Summary:  `Find zet(s) by tag'`,
@@ -223,6 +182,20 @@ var Tags = &Z.Cmd{
 			fmt.Println(v.Id, v.Title)
 		}
 
+		return nil
+	},
+}
+
+var CheckCmd = &Z.Cmd{
+	Name:     `check`,
+	Summary:  `Check environment variables and configuration`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		err := z.CheckZetConfig()
+		if err != nil {
+			return err
+		}
 		return nil
 	},
 }
@@ -253,22 +226,6 @@ func (z *Zet) FindTags(tag string, files []string) ([]Title, error) {
 	}
 	return titles, nil
 }
-
-var Check = &Z.Cmd{
-	Name:     `check`,
-	Summary:  `Check environment variables and configuration`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.CheckZetConfig()
-		if err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-// screenshot
 
 // Title holds the id and title for a given Zet when searching the filesystem
 type Title struct {
@@ -395,6 +352,8 @@ func (z *Zet) GetZet(zet string) (string, error) {
 	}
 }
 
+// CreateReadme builds the zet README.md file structure, sets the permissions
+// and the path to the file on a Zet struct.
 func (z *Zet) CreateReadme(r Zet, path string) error {
 	f := []byte(fmt.Sprintf("# %s\n\n", z.Title))
 	err := os.WriteFile(r.GetReadme(path), f, 0664)
@@ -439,100 +398,6 @@ func (z *Zet) ChangeDir(path string) error {
 	err := os.Chdir(path)
 	if err != nil {
 		return errors.New(fmt.Sprintf("file does not exist %q", path))
-	}
-	return nil
-}
-
-func (z *Zet) Pull() error {
-	// sanity check git remote
-	err := z.GitRemote()
-	if err != nil {
-		return err
-	}
-	err = z.ChangeDir(z.Path)
-	if err != nil {
-		return err
-	}
-	err = Z.Exec("git", "pull", "-q")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (z *Zet) Add() error {
-	err := z.ChangeDir(z.Path)
-	if err != nil {
-		return err
-	}
-	err = Z.Exec("git", "add", "-A", z.Path)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (z *Zet) Commit() error {
-	err := z.ChangeDir(z.Path)
-	if err != nil {
-		return err
-	}
-	err = Z.Exec("git", "commit", "-m", z.Title)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Committed %q\n", z.Title)
-	return nil
-}
-func (z *Zet) Push() error {
-	// sanity check git remote
-	err := z.GitRemote()
-	if err != nil {
-		return err
-	}
-	err = z.ChangeDir(z.Path)
-	if err != nil {
-		return err
-	}
-	err = Z.Exec("git", "push", "--quiet")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// PullAddCommitPush is a helper method which flows through a Git workflow
-// and is called often in Commands such as `create` and `edit`.
-func (z *Zet) PullAddCommitPush() error {
-	err := z.GetTitle()
-	if err != nil {
-		return err
-	}
-	err = z.Pull()
-	if err != nil {
-		return err
-	}
-	err = z.Add()
-	if err != nil {
-		return err
-	}
-	err = z.Commit()
-	if err != nil {
-		return err
-	}
-	err = z.Push()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GitRemote checks for the existence of a non-empty `git remote -v` response.
-func (z *Zet) GitRemote() error {
-	if os.Getenv("GIT_REMOTE") != "" {
-		return nil
-	}
-	s := Z.Out("git", "remote", "-v")
-	if s == "" {
-		return errors.New("no git remote found")
 	}
 	return nil
 }
