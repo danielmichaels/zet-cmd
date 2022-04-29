@@ -4,6 +4,7 @@ import (
 	"fmt"
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -14,7 +15,7 @@ var EditCmd = &Z.Cmd{
 	Summary:  `Edit a zet`,
 	MinArgs:  1,
 	Usage:    `must provide a zet isosec value`,
-	Commands: []*Z.Cmd{help.Cmd, editLast},
+	Commands: []*Z.Cmd{help.Cmd, editLast, findEdit},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
 
@@ -33,15 +34,6 @@ var EditCmd = &Z.Cmd{
 		}
 		return nil
 	},
-}
-
-func (z *Zet) editZet(zet string) error {
-	file := filepath.Join(zet, "README.md")
-	err := Z.Exec(Editor, file)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 var editLast = &Z.Cmd{
@@ -74,6 +66,84 @@ var editLast = &Z.Cmd{
 	},
 }
 
+type Found struct {
+	Index int
+	Id    string
+	Title string
+}
+
+var findEdit = &Z.Cmd{
+	Name:     `find`,
+	Summary:  `edit the last modified zet entry from the git repo`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return err
+		}
+		dir, _ := os.Getwd()
+		files, err := z.ReadDir(dir)
+		if err != nil {
+			return err
+		}
+		titles, err := z.FindTitles(files)
+		if err != nil {
+			return err
+		}
+		results, err := z.SearchTitles(args[0], titles)
+		if err != nil {
+			return err
+		}
+		var ff []Found
+		for idx, v := range results {
+			var f Found
+			f.Index = idx
+			f.Id = v.Id
+			f.Title = v.Title
+			ff = append(ff, f)
+		}
+		for _, k := range ff {
+			fmt.Printf("%d) %s %s\n", k.Index, k.Id, k.Title)
+		}
+		var s int
+		fmt.Printf("#> ")
+		_, err = fmt.Scanln(&s)
+		if err != nil {
+			switch err.Error() {
+			case "unexpected newline":
+				fmt.Println("Did not enter a value. Exiting.")
+				return nil
+			case "expected integer":
+				fmt.Println("Must enter an integer")
+				return nil
+			default:
+				return err
+			}
+		}
+
+		var zet string
+		for _, k := range ff {
+			idx := k.Index
+			if s != idx {
+				fmt.Println("Key entered does not match, or zet could not be found")
+				return nil
+			}
+			zet = k.Id
+		}
+		err = z.editZet(zet)
+		if err != nil {
+			return err
+		}
+		err = z.scanAndCommit(zet)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func (z *Zet) scanAndCommit(zet string) error {
 	var r string
 	fmt.Printf("Commit? y/N ")
@@ -94,6 +164,15 @@ func (z *Zet) scanAndCommit(zet string) error {
 	}
 	z.Path = filepath.Join(z.GetRepo(), zet)
 	err = z.PullAddCommitPush()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (z *Zet) editZet(zet string) error {
+	file := filepath.Join(zet, "README.md")
+	err := Z.Exec(Editor, file)
 	if err != nil {
 		return err
 	}
