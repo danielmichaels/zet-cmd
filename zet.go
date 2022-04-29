@@ -53,18 +53,19 @@ var CreateCmd = &Z.Cmd{
 		}
 
 		// Drop into vim and write Zet contents
-		err = Z.Exec(Editor, z.GetReadme(z.Path))
+		zet := z.GetReadme(z.Path)
+		err = Z.Exec(Editor, zet)
 		if err != nil {
 			return err
 		}
-		err = z.PullAddCommitPush()
+		err = z.scanAndCommit(z.Path)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Committing %q\n", z.Title)
 		return nil
 	},
 }
+
 var GetCmd = &Z.Cmd{
 	Name:     `get`,
 	Aliases:  []string{"g"},
@@ -105,6 +106,7 @@ var LastCmd = &Z.Cmd{
 		return nil
 	},
 }
+
 var QueryCmd = &Z.Cmd{
 	Name:     `query`,
 	Aliases:  []string{"q"},
@@ -119,6 +121,7 @@ var QueryCmd = &Z.Cmd{
 		return nil
 	},
 }
+
 var FindCmd = &Z.Cmd{
 	Name:     `find`,
 	Aliases:  []string{"f"},
@@ -152,6 +155,7 @@ var FindCmd = &Z.Cmd{
 		return nil
 	},
 }
+
 var TagsCmd = &Z.Cmd{
 	Name:     `tags`,
 	Aliases:  []string{"t"},
@@ -182,6 +186,20 @@ var TagsCmd = &Z.Cmd{
 	},
 }
 
+var CheckCmd = &Z.Cmd{
+	Name:     `check`,
+	Summary:  `Check environment variables and configuration`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		err := z.CheckZetConfig()
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 // FindTags takes a tag and array of files and then searches the files for the
 // tag. Any matches are returned as a slice of Title structs containing the
 // Id and Title of the file with the match.
@@ -208,22 +226,6 @@ func (z *Zet) FindTags(tag string, files []string) ([]Title, error) {
 	}
 	return titles, nil
 }
-
-var CheckCmd = &Z.Cmd{
-	Name:     `check`,
-	Summary:  `Check environment variables and configuration`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.CheckZetConfig()
-		if err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-// screenshot
 
 // Title holds the id and title for a given Zet when searching the filesystem
 type Title struct {
@@ -350,6 +352,8 @@ func (z *Zet) GetZet(zet string) (string, error) {
 	}
 }
 
+// CreateReadme builds the zet README.md file structure, sets the permissions
+// and the path to the file on a Zet struct.
 func (z *Zet) CreateReadme(r Zet, path string) error {
 	f := []byte(fmt.Sprintf("# %s\n\n", z.Title))
 	err := os.WriteFile(r.GetReadme(path), f, 0664)
