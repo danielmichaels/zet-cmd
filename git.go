@@ -4,10 +4,37 @@ import (
 	"errors"
 	"fmt"
 	Z "github.com/rwxrob/bonzai/z"
+	"github.com/rwxrob/help"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+var GitCmd = &Z.Cmd{
+	Name:     `git`,
+	Summary:  `run git commands over the zet repo`,
+	MinArgs:  1,
+	Usage:    `must provide a git command`,
+	Commands: []*Z.Cmd{help.Cmd, gitPull},
+}
+
+var gitPull = &Z.Cmd{
+	Name:     `pull`,
+	Summary:  `retrieve upstream latest commits`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return err
+		}
+		err = Z.Exec("git", "pull")
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
 
 // scanAndCommit checks that the user wants to commit their work to the VCS
 // and pushes the commit if they accept.
