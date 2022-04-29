@@ -6,7 +6,6 @@ import (
 	"github.com/rwxrob/help"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 )
 
@@ -167,32 +166,6 @@ var findEdit = &Z.Cmd{
 		}
 		return nil
 	},
-}
-
-func (z *Zet) scanAndCommit(zet string) error {
-	var r string
-	fmt.Printf("Commit? y/N ")
-	_, err := fmt.Scanln(&r)
-	if err != nil {
-		// <Enter> will return the following error, so we mark it as "N".
-		if err.Error() != "unexpected newline" {
-			return err
-		}
-		r = "N"
-	}
-	r = strings.TrimSpace(r)
-	r = strings.ToLower(r)
-
-	if r != "y" {
-		fmt.Printf("%q not commited but modified\n", zet)
-		return nil
-	}
-	z.Path = filepath.Join(z.GetRepo(), zet)
-	err = z.PullAddCommitPush()
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (z *Zet) editZet(zet string) error {
