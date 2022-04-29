@@ -125,6 +125,10 @@ var findEdit = &Z.Cmd{
 			f.Title = v.Title
 			ff = append(ff, f)
 		}
+		if len(ff) == 0 {
+			fmt.Printf("No entries found for %q\n", args[0])
+			return nil
+		}
 		for _, k := range ff {
 			fmt.Printf("%d) %s %s\n", k.Index, k.Id, k.Title)
 		}
