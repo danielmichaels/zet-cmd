@@ -19,6 +19,8 @@ import (
 	"time"
 )
 
+const zetRegex = "^[0-9]{14,}$"
+
 var (
 	Pager       = os.Getenv("PAGER")
 	Editor      = os.Getenv("EDITOR")
@@ -366,17 +368,18 @@ func (z *Zet) CreateReadme(r Zet, path string) error {
 
 // ReadDir reads all files within a given path excluding the .git repo
 func (z *Zet) ReadDir(path string) ([]string, error) {
+	r := regexp.MustCompile(zetRegex)
 	var files []string
 	fileInfo, err := ioutil.ReadDir(path)
 	if err != nil {
 		return files, err
 	}
 
-	for _, file := range fileInfo {
-		if file.Name() == ".git" {
+	for _, f := range fileInfo {
+		if !r.MatchString(f.Name()) {
 			continue
 		}
-		files = append(files, file.Name())
+		files = append(files, f.Name())
 	}
 	return files, nil
 }
@@ -406,10 +409,11 @@ func (z *Zet) ChangeDir(path string) error {
 // most recent directory.
 func (z *Zet) Last() (string, error) {
 	files, _ := ioutil.ReadDir(z.GetRepo())
+	r := regexp.MustCompile(zetRegex)
 	var last string
 	var newest int64 = 0
 	for _, f := range files {
-		if f.Name() == ".git" {
+		if !r.MatchString(f.Name()) {
 			continue
 		}
 		fi, err := os.Stat(f.Name())
