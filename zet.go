@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -34,12 +35,30 @@ var (
 )
 
 var CreateCmd = &Z.Cmd{
-	Name:     `create`,
-	Aliases:  []string{"new", "c"},
-	Summary:  `Create a new zet`,
+	Name:    `create`,
+	Aliases: []string{"new", "c"},
+	Summary: `Create a new zet`,
+	Dynamic: template.FuncMap{"editor": func() string { return Editor }},
+	Description: `
+			Create a new zettelkasten entry by passing in the title as the only argument.
+
+			This will then create a new README.md in a directory with
+			an *isosec* timestamp as its name and use the system editor 
+			({{ editor }}) to drop you into the file.
+
+			**Multi-word titles must be encapsulated within quotations.** 
+`,
+	Other: []Z.Section{
+		{`Examples`, `
+					zet create "A New Thing"
+
+					zet c title
+`},
+	},
 	Commands: []*Z.Cmd{help.Cmd},
 	Usage:    `must provide a title for each zet`,
 	MinArgs:  1,
+	MaxArgs:  1,
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := Zet{Title: args[0]}
 
@@ -69,10 +88,14 @@ var CreateCmd = &Z.Cmd{
 }
 
 var GetCmd = &Z.Cmd{
-	Name:     `get`,
-	Aliases:  []string{"g"},
-	Summary:  `Retrieve a zet for editing`,
-	MinArgs:  1,
+	Name:    `get`,
+	Aliases: []string{"g"},
+	Summary: `Retrieve a zet for editing`,
+	MinArgs: 1,
+	Dynamic: template.FuncMap{"isosec": func() string { return Isosec() }},
+	Other: []Z.Section{
+		{`Examples`, `zet get {{ isosec }}`},
+	},
 	Usage:    `must provide a zet isosec value`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
@@ -88,9 +111,12 @@ var GetCmd = &Z.Cmd{
 }
 
 var LastCmd = &Z.Cmd{
-	Name:     `last`,
-	Aliases:  []string{"l", "latest"},
-	Summary:  `Get the most recent zet isosec and print it screen`,
+	Name:    `last`,
+	Aliases: []string{"l", "latest"},
+	Summary: `Get the most recent zet isosec and print it screen`,
+	Description: `
+			Prints the last modified zet entry's isosec value
+`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
@@ -109,26 +135,92 @@ var LastCmd = &Z.Cmd{
 	},
 }
 
+var ViewCmd = &Z.Cmd{
+	Name:     `view`,
+	Aliases:  []string{"v"},
+	Summary:  `view command for zet entries`,
+	Commands: []*Z.Cmd{help.Cmd, viewAll},
+}
+
+var viewAll = &Z.Cmd{
+	Name:    `all`,
+	Summary: `view all zet entries`,
+	Description: `
+			Output all zet entries from the local git repo.
+			
+			To view the response in the system pager ({{ pager }}) you must
+			pipe the response using the terminal.
+				
+
+			**zet view all | {{ pager }}**
+`,
+	Dynamic: template.FuncMap{
+		"pager": func() string { return Pager },
+	},
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		err := z.ChangeDir(z.GetRepo())
+		if err != nil {
+			return err
+		}
+		dir, _ := os.Getwd()
+		files, err := z.ReadDir(dir)
+		if err != nil {
+			return err
+		}
+		titles, err := z.FindTitles(files)
+		if err != nil {
+			return err
+		}
+		for _, v := range titles {
+			fmt.Println(v.Id, v.Title)
+		}
+		return nil
+	},
+}
+
 var QueryCmd = &Z.Cmd{
-	Name:     `query`,
-	Aliases:  []string{"q"},
-	Summary:  `Create a searchable URL with a query string`,
+	Name:    `query`,
+	Aliases: []string{"q"},
+	Summary: `create a searchable URL with a query string`,
+	Description: `
+			Create a URL with a search term for the remote git hosting provider.
+			
+			Must place multi-word search terms inside quotations.
+`,
+	Other: []Z.Section{
+		{`Examples`, `
+			zet query "Multi-word must be quoted"
+
+			*Outputs:* https://github.com/danielmichaels/zet/search?q=multi-word+must+be+quoted`,
+		},
+	},
 	MinArgs:  1,
+	MaxArgs:  1,
 	Usage:    `must provide a search term`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		term := url2.QueryEscape(args[0])
-		url := fmt.Sprintf("https://github.com/%s/%s/search?q=%s", GitUser, RepoName, term)
+		url := fmt.Sprintf("https://github.com/%s/%s/search?q=%s", GitUser, RepoName, strings.ToLower(term))
 		fmt.Println(url)
 		return nil
 	},
 }
 
 var FindCmd = &Z.Cmd{
-	Name:     `find`,
-	Aliases:  []string{"f"},
-	Summary:  `Find a zet title by search term`,
+	Name:    `find`,
+	Aliases: []string{"f"},
+	Summary: `Find a zet title by search term`,
+	Description: `
+			Search for a zet by title and retrieve any entries with that term
+			in the title.
+			Also captures partial matches, so "go" will find "golang".
+			
+			Only prints entries to the terminal.
+`,
 	MinArgs:  1,
+	MaxArgs:  1,
 	Usage:    `must provide a search term`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
@@ -159,10 +251,17 @@ var FindCmd = &Z.Cmd{
 }
 
 var TagsCmd = &Z.Cmd{
-	Name:     `tags`,
-	Aliases:  []string{"t"},
-	Summary:  `Find zet(s) by tag'`,
+	Name:    `tags`,
+	Aliases: []string{"t"},
+	Summary: `Find zet(s) by tag'`,
+	Description: `
+			Search for a zet by tag and retrieve any entries with that tag.
+			Also captures partial matches, so "go" will find "golang".
+			
+			Only prints entries to the terminal.
+`,
 	MinArgs:  1,
+	MaxArgs:  1,
 	Usage:    `must provide a search term`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
@@ -190,7 +289,7 @@ var TagsCmd = &Z.Cmd{
 
 var CheckCmd = &Z.Cmd{
 	Name:     `check`,
-	Summary:  `Check environment variables and configuration`,
+	Summary:  `check environment variables and configuration`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
