@@ -15,9 +15,7 @@ var EditCmd = &Z.Cmd{
 	Summary: `edit a zet`,
 	MinArgs: 1,
 	Usage:   `must provide a zet isosec value`,
-	Dynamic: template.FuncMap{
-		"editor": func() string { return Editor },
-	},
+	Dynamic: template.FuncMap{"editor": func() string { return Editor }},
 	Description: `
 			Enter a valid isosec value (e.g. 20220424000235) and it will be opened using your system editor ({{ editor}}).
 `,
@@ -45,9 +43,7 @@ var EditCmd = &Z.Cmd{
 var editLast = &Z.Cmd{
 	Name:    `last`,
 	Summary: `edit the last modified zet entry from the git repo`,
-	Dynamic: template.FuncMap{
-		"editor": func() string { return Editor },
-	},
+	Dynamic: template.FuncMap{"editor": func() string { return Editor }},
 	Description: `
 			Open the last modified zet using your system editor ({{ editor}}).
 `,
@@ -87,13 +83,12 @@ type Found struct {
 var findEdit = &Z.Cmd{
 	Name:    `find`,
 	Summary: `search titles for a zet to edit`,
-	Dynamic: template.FuncMap{
-		"editor": func() string { return Editor },
-	},
+	Dynamic: template.FuncMap{"editor": func() string { return Editor }},
 	Description: `
 			Search for a zet title and retrieve any matching entry.
 			
-			To edit it, enter the index into the terminal and press enter. This will open the file in the system editor ({{ editor }}).
+			To edit it, enter the index into the terminal and press enter. 
+			This will open the file in the system editor ({{ editor }}).
 `,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(caller *Z.Cmd, args ...string) error {

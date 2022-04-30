@@ -26,7 +26,8 @@ var Cmd = &Z.Cmd{
 		help.Cmd, conf.Cmd, vars.Cmd,
 
 		// local commands (in this module)
-		CreateCmd, LastCmd, EditCmd, GetCmd, QueryCmd, FindCmd, CheckCmd, TagsCmd, GitCmd,
+		CreateCmd, LastCmd, EditCmd, GetCmd, QueryCmd,
+		FindCmd, CheckCmd, TagsCmd, GitCmd, ViewCmd,
 	},
 	Description: `
 		The **{{.Name}}** command is Zettelkasten Bonzai branch used to create
