@@ -29,6 +29,7 @@ var (
 	GitBranch   = "main"
 	RepoName    = "zet"
 	GitRepo     = filepath.Join(os.Getenv("HOME"), os.Getenv("REPOS"))
+	ZetRepo     = filepath.Join(GitRepo, RepoName)
 	Pictures    = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Screenshots = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Downloads   = filepath.Join(os.Getenv("HOME"), "Downloads")
@@ -378,7 +379,7 @@ type Zet struct {
 }
 
 // GetRepo returns the GitRepo and RepoName as a filepath.
-func (z *Zet) GetRepo() string { return filepath.Join(GitRepo, RepoName) }
+func (z *Zet) GetRepo() string { return ZetRepo }
 
 // GetReadme returns a filepath with README.md appended using a filepath join. This
 // is used to retrieve the full path to the README.md being written to or read from.
