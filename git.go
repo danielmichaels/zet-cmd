@@ -6,7 +6,6 @@ import (
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -56,7 +55,6 @@ func (z *Zet) scanAndCommit(zet string) error {
 		fmt.Printf("%q not commited but modified\n", zet)
 		return nil
 	}
-	z.Path = filepath.Join(z.GetRepo(), zet)
 	err = z.PullAddCommitPush()
 	if err != nil {
 		return err
@@ -67,11 +65,13 @@ func (z *Zet) scanAndCommit(zet string) error {
 // PullAddCommitPush is a helper method which flows through a Git workflow
 // and is called often in Commands such as `create` and `edit`.
 func (z *Zet) PullAddCommitPush() error {
-	err := z.GetTitle()
-	if err != nil {
-		return err
+	if z.Title == "" {
+		err := z.GetTitle()
+		if err != nil {
+			return err
+		}
 	}
-	err = z.Pull()
+	err := z.Pull()
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (z *Zet) Pull() error {
 	if err != nil {
 		return err
 	}
-	err = z.ChangeDir(z.Path)
+	err = z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (z *Zet) Pull() error {
 }
 
 func (z *Zet) Add() error {
-	err := z.ChangeDir(z.Path)
+	err := z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (z *Zet) Add() error {
 }
 
 func (z *Zet) Commit() error {
-	err := z.ChangeDir(z.Path)
+	err := z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (z *Zet) Push() error {
 	if err != nil {
 		return err
 	}
-	err = z.ChangeDir(z.Path)
+	err = z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
