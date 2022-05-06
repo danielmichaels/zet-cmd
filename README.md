@@ -15,7 +15,7 @@ go install github.com/danielmichaels/zet-cmd/cmd/zet@latest
 Composed
 
 ```go
-package z
+package zet
 
 import (
 	Z "github.com/rwxrob/bonzai/z"
@@ -24,7 +24,7 @@ import (
 )
 
 var Cmd = &Z.Cmd{
-	Name:     `z`,
+	Name:     `zet`,
 	Commands: []*Z.Cmd{help.Cmd, zet.Cmd},
 }
 ```
@@ -41,12 +41,7 @@ On a new machine (but existing `zet` repo), you will need to `git clone` to the 
 
 - `EDITOR` must be set to create and edit Zet's.
 - `GITUSER` must be your GitHub account username
-- `REPOS` should point to location of your code repos. e.g. `$HOME/Code/github`. Without this `zet` cannot find the directory or files
-
-The `REPOS` environment variable is important as it is used to find the directory of your `zet` 
-repository. It is the `zet` repo which stores all the commits - see the note to identify if the 
-directory paths and environment variables are set correctly before attempting to `zet create` or 
-`edit`.
+- `ZETDIR` should point to the `zet` repo on your system e.g. `$HOME/Code/github/zet`. Without this `zet` cannot find the directory or files
 
 **📣 Note**
 

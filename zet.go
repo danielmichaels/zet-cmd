@@ -26,10 +26,8 @@ var (
 	Pager       = os.Getenv("PAGER")
 	Editor      = os.Getenv("EDITOR")
 	GitUser     = os.Getenv("GITUSER")
-	GitBranch   = "main"
 	RepoName    = "zet"
-	GitRepo     = filepath.Join(os.Getenv("HOME"), os.Getenv("REPOS"))
-	ZetRepo     = filepath.Join(GitRepo, RepoName)
+	ZetRepo     = filepath.Join(os.Getenv("ZETDIR"))
 	Pictures    = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Screenshots = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Downloads   = filepath.Join(os.Getenv("HOME"), "Downloads")
@@ -487,7 +485,7 @@ func (z *Zet) ReadDir(path string) ([]string, error) {
 // CreateDir creates a directory inside the zet repository using the Isosec
 // function to create the directory using the returned timestamp.
 func (z *Zet) CreateDir() (string, error) {
-	path := filepath.Join(GitRepo, RepoName, Isosec())
+	path := filepath.Join(ZetRepo, Isosec())
 	err := mkdir(path)
 	if err != nil {
 		return "", err
@@ -526,6 +524,8 @@ func (z *Zet) Last() (string, error) {
 			last = f.Name()
 		}
 	}
+	// Set path on Zet now as its used everywhere
+	z.Path = filepath.Join(ZetRepo, last)
 	return last, nil
 }
 
@@ -547,7 +547,7 @@ func (z *Zet) CheckZetConfig() error {
 	}
 	fmt.Println(term.Blue + "Repos Variable: " + term.Reset + REPOS)
 	fmt.Println(term.Blue + "GitUser: " + term.Reset + GitUser)
-	fmt.Println(term.Blue + "GitRepo: " + term.Reset + GitRepo)
+	fmt.Println(term.Blue + "ZetRepo: " + term.Reset + ZetRepo)
 	fmt.Println(term.Blue + "System Zet Repo: " + term.Reset + z.GetRepo())
 	// Future use case info
 	fmt.Println(term.U + term.Yellow + "Utility Directories" + term.Reset)
