@@ -68,7 +68,7 @@ func (z *Zet) PullAddCommitPush() error {
 	if z.Title == "" {
 		err := z.GetTitle()
 		if err != nil {
-			return err
+			return errors.New("failed to ascertain zet title")
 		}
 	}
 	err := z.Pull()

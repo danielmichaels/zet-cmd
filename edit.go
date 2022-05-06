@@ -94,7 +94,7 @@ var findEdit = &Z.Cmd{
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
 
-		err := z.ChangeDir(z.GetRepo())
+		err := z.ChangeDir(ZetRepo)
 		if err != nil {
 			return err
 		}
@@ -144,13 +144,15 @@ var findEdit = &Z.Cmd{
 
 		var zet string
 		for _, k := range ff {
-			idx := k.Index
-			if s != idx {
-				fmt.Println("Key entered does not match, or zet could not be found")
-				return nil
+			if s == k.Index {
+				zet = k.Id
 			}
-			zet = k.Id
 		}
+		if zet == "" {
+			fmt.Println("Key entered does not match, or zet could not be found")
+			return nil
+		}
+
 		err = z.editZet(zet)
 		if err != nil {
 			return err
