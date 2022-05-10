@@ -32,7 +32,7 @@ var EditCmd = &Z.Cmd{
 			if err != nil {
 				return err
 			}
-			err = z.editZet(zet)
+			err = z.openZetForEdit(zet)
 			if err != nil {
 				return err
 			}
@@ -71,7 +71,7 @@ var editLast = &Z.Cmd{
 			return err
 		}
 
-		err = z.editZet(last)
+		err = z.openZetForEdit(last)
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ var findEdit = &Z.Cmd{
 	},
 }
 
-func (z *Zet) editZet(zet string) error {
+func (z *Zet) openZetForEdit(zet string) error {
 	file := filepath.Join(zet, "README.md")
 	err := Z.Exec(Editor, file)
 	if err != nil {
@@ -120,24 +120,38 @@ func (z *Zet) editZet(zet string) error {
 	}
 	return nil
 }
-
 func (z *Zet) edit(args ...string) error {
-	err := z.ChangeDir(ZetRepo)
+	zet, err := z.searchScanner(args[0])
+	println(zet)
+	fmt.Println(z)
+	err = z.openZetForEdit(zet)
 	if err != nil {
 		return err
+	}
+	err = z.scanAndCommit(zet)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (z *Zet) searchScanner(args ...string) (string, error) {
+	err := z.ChangeDir(ZetRepo)
+	if err != nil {
+		return "", err
 	}
 	dir, _ := os.Getwd()
 	files, err := z.ReadDir(dir)
 	if err != nil {
-		return err
+		return "", err
 	}
 	titles, err := z.FindTitles(files)
 	if err != nil {
-		return err
+		return "", err
 	}
 	results, err := z.SearchTitles(args[0], titles)
 	if err != nil {
-		return err
+		return "", err
 	}
 	var ff []Found
 	for idx, v := range results {
@@ -149,7 +163,7 @@ func (z *Zet) edit(args ...string) error {
 	}
 	if len(ff) == 0 {
 		fmt.Printf("No entries found for %q\n", args[0])
-		return nil
+		return "", err
 	}
 	for _, k := range ff {
 		fmt.Printf("%d) %s %s\n", k.Index, k.Id, k.Title)
@@ -161,12 +175,12 @@ func (z *Zet) edit(args ...string) error {
 		switch err.Error() {
 		case "unexpected newline":
 			fmt.Println("Did not enter a value. Exiting.")
-			return nil
+			return "", err
 		case "expected integer":
 			fmt.Println("Must enter an integer")
-			return nil
+			return "", err
 		default:
-			return err
+			return "", err
 		}
 	}
 
@@ -178,16 +192,8 @@ func (z *Zet) edit(args ...string) error {
 	}
 	if zet == "" {
 		fmt.Println("Key entered does not match, or zet could not be found")
-		return nil
+		return "", nil
 	}
 
-	err = z.editZet(zet)
-	if err != nil {
-		return err
-	}
-	err = z.scanAndCommit(zet)
-	if err != nil {
-		return err
-	}
-	return nil
+	return zet, nil
 }
