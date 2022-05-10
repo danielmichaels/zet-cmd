@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/charmbracelet/glamour"
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"github.com/rwxrob/term"
@@ -20,7 +21,10 @@ import (
 	"time"
 )
 
-const zetRegex = "^[0-9]{14,}$"
+const (
+	zetRegex    = "^[0-9]{14,}$"
+	zetWordWrap = 73
+)
 
 var (
 	Pager       = os.Getenv("PAGER")
@@ -135,10 +139,63 @@ var LastCmd = &Z.Cmd{
 }
 
 var ViewCmd = &Z.Cmd{
-	Name:     `view`,
-	Aliases:  []string{"v"},
-	Summary:  `view command for zet entries`,
+	Name:    `view`,
+	Aliases: []string{"v"},
+	Summary: `view command for zet entries.`,
+	Description: `
+			View supports both direct 'isosec' lookup's and keyword searches. 
+
+			If a valid entry is found the markdown will be rendered in the terminal.
+`,
 	Commands: []*Z.Cmd{help.Cmd, viewAll},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		r := regexp.MustCompile(zetRegex)
+
+		if r.MatchString(args[0]) {
+			// Allow render of specific isosec
+			zet, err := z.GetZet(args[0])
+			if err != nil {
+				return err
+			}
+			file := filepath.Join(ZetRepo, zet, "README.md")
+			r, err := glamour.NewTermRenderer(
+				glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
+			)
+			if err != nil {
+				return err
+			}
+			c, err := ioutil.ReadFile(file)
+			out, err := r.Render(string(c))
+			fmt.Print(out)
+			return nil
+		}
+		err := z.render(args[0])
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+func (z *Zet) render(arg string) error {
+	zet, err := z.searchScanner(arg)
+	if err != nil {
+		return err
+	}
+	p := z.GetReadme(filepath.Join(ZetRepo, zet))
+	println(p)
+	println(z.Path)
+	r, err := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
+	)
+	if err != nil {
+		return err
+	}
+	c, err := ioutil.ReadFile(p)
+	out, err := r.Render(string(c))
+	fmt.Print(out)
+	return nil
 }
 
 var viewAll = &Z.Cmd{
