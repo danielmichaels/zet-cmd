@@ -139,9 +139,14 @@ var LastCmd = &Z.Cmd{
 }
 
 var ViewCmd = &Z.Cmd{
-	Name:     `view`,
-	Aliases:  []string{"v"},
-	Summary:  `view command for zet entries`,
+	Name:    `view`,
+	Aliases: []string{"v"},
+	Summary: `view command for zet entries.`,
+	Description: `
+			View supports both direct 'isosec' lookup's and keyword searches. 
+
+			If a valid entry is found the markdown will be rendered in the terminal.
+`,
 	Commands: []*Z.Cmd{help.Cmd, viewAll},
 	Call: func(caller *Z.Cmd, args ...string) error {
 		z := new(Zet)
