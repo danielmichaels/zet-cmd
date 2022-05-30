@@ -4,9 +4,11 @@ import (
 	"fmt"
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
+	"github.com/rwxrob/term"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"text/template"
 )
 
@@ -122,7 +124,6 @@ func (z *Zet) openZetForEdit(zet string) error {
 }
 func (z *Zet) edit(args ...string) error {
 	zet, err := z.searchScanner(args[0])
-	println(zet)
 	fmt.Println(z)
 	err = z.openZetForEdit(zet)
 	if err != nil {
@@ -163,27 +164,18 @@ func (z *Zet) searchScanner(args ...string) (string, error) {
 	}
 	if len(ff) == 0 {
 		fmt.Printf("No entries found for %q\n", args[0])
-		return "", err
+		os.Exit(0)
 	}
 	for _, k := range ff {
 		fmt.Printf("%d) %s %s\n", k.Index, k.Id, k.Title)
 	}
-	var s int
-	fmt.Printf("#> ")
-	_, err = fmt.Scanln(&s)
-	if err != nil {
-		switch err.Error() {
-		case "unexpected newline":
-			fmt.Println("Did not enter a value. Exiting.")
-			return "", err
-		case "expected integer":
-			fmt.Println("Must enter an integer")
-			return "", err
-		default:
-			return "", err
-		}
+	prompt := term.Prompt("#> ")
+	if prompt == "" {
+		fmt.Println("exiting. did not provide valid entry.")
+		os.Exit(0)
 	}
 
+	s, _ := strconv.Atoi(prompt)
 	var zet string
 	for _, k := range ff {
 		if s == k.Index {
@@ -192,7 +184,7 @@ func (z *Zet) searchScanner(args ...string) (string, error) {
 	}
 	if zet == "" {
 		fmt.Println("Key entered does not match, or zet could not be found")
-		return "", nil
+		os.Exit(0)
 	}
 
 	return zet, nil
