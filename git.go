@@ -5,8 +5,8 @@ import (
 	"fmt"
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
+	"github.com/rwxrob/term"
 	"os"
-	"strings"
 )
 
 var GitCmd = &Z.Cmd{
@@ -38,24 +38,11 @@ var gitPull = &Z.Cmd{
 // scanAndCommit checks that the user wants to commit their work to the VCS
 // and pushes the commit if they accept.
 func (z *Zet) scanAndCommit(zet string) error {
-	var r string
-	fmt.Printf("Commit? y/N ")
-	_, err := fmt.Scanln(&r)
-	if err != nil {
-		// <Enter> will return the following error, so we mark it as "N".
-		if err.Error() != "unexpected newline" {
-			return err
-		}
-		r = "N"
-	}
-	r = strings.TrimSpace(r)
-	r = strings.ToLower(r)
-
-	if r != "y" {
+	if term.Prompt("Commit? (y/N) ") != "y" {
 		fmt.Printf("%q not commited but modified\n", zet)
-		return nil
+		os.Exit(0)
 	}
-	err = z.PullAddCommitPush()
+	err := z.PullAddCommitPush()
 	if err != nil {
 		return err
 	}
