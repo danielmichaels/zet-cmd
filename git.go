@@ -60,19 +60,19 @@ func (z *Zet) PullAddCommitPush() error {
 	}
 	err := z.Pull()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to pull from git remote: %w", err)
 	}
 	err = z.Add()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 	err = z.Commit()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to commit files to git: %w", err)
 	}
 	err = z.Push()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to push files to git: %w", err)
 	}
 	return nil
 }
@@ -90,11 +90,11 @@ func (z *Zet) GitRemote() error {
 }
 
 func (z *Zet) Pull() error {
-	err := z.GitRemote()
+	err := z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
-	err = z.ChangeDir(ZetRepo)
+	err = z.GitRemote()
 	if err != nil {
 		return err
 	}
@@ -131,11 +131,11 @@ func (z *Zet) Commit() error {
 }
 
 func (z *Zet) Push() error {
-	err := z.GitRemote()
+	err := z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
-	err = z.ChangeDir(ZetRepo)
+	err = z.GitRemote()
 	if err != nil {
 		return err
 	}
