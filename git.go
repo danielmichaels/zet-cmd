@@ -90,11 +90,12 @@ func (z *Zet) GitRemote() error {
 }
 
 func (z *Zet) Pull() error {
-	err := z.GitRemote()
+	err := z.ChangeDir(ZetRepo)
 	if err != nil {
 		return err
 	}
-	err = z.ChangeDir(ZetRepo)
+
+	err = z.GitRemote()
 	if err != nil {
 		return err
 	}
