@@ -124,7 +124,6 @@ func (z *Zet) openZetForEdit(zet string) error {
 }
 func (z *Zet) edit(args ...string) error {
 	zet, err := z.searchScanner(args[0])
-	fmt.Println(z)
 	err = z.openZetForEdit(zet)
 	if err != nil {
 		return err

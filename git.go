@@ -6,6 +6,7 @@ import (
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"github.com/rwxrob/term"
+	"log"
 	"os"
 )
 
@@ -64,21 +65,22 @@ func (z *Zet) PullAddCommitPush() error {
 	}
 	err = z.Add()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 	err = z.Commit()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to commit files to git: %w", err)
 	}
 	err = z.Push()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to push files to git: %w", err)
 	}
 	return nil
 }
 
 // GitRemote checks for the existence of a non-empty `git remote -v` response.
 func (z *Zet) GitRemote() error {
+	log.Printf("git remote: %q", os.Getenv("GIT_REMOTE"))
 	if os.Getenv("GIT_REMOTE") != "" {
 		return nil
 	}
