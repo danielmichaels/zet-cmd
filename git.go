@@ -60,7 +60,7 @@ func (z *Zet) PullAddCommitPush() error {
 	}
 	err := z.Pull()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to pull from git remote: %w", err)
 	}
 	err = z.Add()
 	if err != nil {
