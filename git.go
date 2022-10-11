@@ -6,7 +6,6 @@ import (
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"github.com/rwxrob/term"
-	"log"
 	"os"
 )
 
@@ -80,7 +79,6 @@ func (z *Zet) PullAddCommitPush() error {
 
 // GitRemote checks for the existence of a non-empty `git remote -v` response.
 func (z *Zet) GitRemote() error {
-	log.Printf("git remote: %q", os.Getenv("GIT_REMOTE"))
 	if os.Getenv("GIT_REMOTE") != "" {
 		return nil
 	}
