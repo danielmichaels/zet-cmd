@@ -23,6 +23,7 @@ import (
 const (
 	zetRegex    = "^[0-9]{14,}$"
 	zetWordWrap = 73
+	zetUrl      = "https://github.com/danielmichaels/zet/blob/main/%s/README.md"
 )
 
 var (
@@ -341,6 +342,28 @@ var TagsCmd = &Z.Cmd{
 			fmt.Println(v.Id, v.Title)
 		}
 
+		return nil
+	},
+}
+
+var LinkCmd = &Z.Cmd{
+	Name:     `link`,
+	Summary:  `create a browsable link to a zet`,
+	MinArgs:  1,
+	MaxArgs:  1,
+	Usage:    `zet link <search-term>`,
+	Commands: []*Z.Cmd{help.Cmd},
+	Call: func(caller *Z.Cmd, args ...string) error {
+		z := new(Zet)
+		zet, err := z.linkScanner(args[0])
+		if err != nil {
+			return err
+		}
+
+		title := zet.Title
+		url := fmt.Sprintf(zetUrl, zet.Id)
+		result := fmt.Sprintf("%s - %s\n", title, url)
+		Z.PrintMark(result)
 		return nil
 	},
 }

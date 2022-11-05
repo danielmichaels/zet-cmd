@@ -135,6 +135,58 @@ func (z *Zet) edit(args ...string) error {
 	return nil
 }
 
+func (z *Zet) linkScanner(args ...string) (Found, error) {
+	err := z.ChangeDir(ZetRepo)
+	if err != nil {
+		return Found{}, err
+	}
+	dir, _ := os.Getwd()
+	files, err := z.ReadDir(dir)
+	if err != nil {
+		return Found{}, err
+	}
+	titles, err := z.FindTitles(files)
+	if err != nil {
+		return Found{}, err
+	}
+	results, err := z.SearchTitles(args[0], titles)
+	if err != nil {
+		return Found{}, err
+	}
+	var ff []Found
+	for idx, v := range results {
+		var f Found
+		f.Index = idx
+		f.Id = v.Id
+		f.Title = v.Title
+		ff = append(ff, f)
+	}
+	if len(ff) == 0 {
+		fmt.Printf("No entries found for %q\n", args[0])
+		os.Exit(0)
+	}
+	for _, k := range ff {
+		fmt.Printf("%d) %s %s\n", k.Index, k.Id, k.Title)
+	}
+	prompt := term.Prompt("#> ")
+	if prompt == "" {
+		fmt.Println("exiting. did not provide valid entry.")
+		os.Exit(0)
+	}
+
+	s, _ := strconv.Atoi(prompt)
+	var zet Found
+	for _, k := range ff {
+		if s == k.Index {
+			zet = k
+		}
+	}
+	if len(zet.Title) == 0 {
+		fmt.Println("Key entered does not match, or zet could not be found")
+		os.Exit(0)
+	}
+	return zet, nil
+}
 func (z *Zet) searchScanner(args ...string) (string, error) {
 	err := z.ChangeDir(ZetRepo)
 	if err != nil {
