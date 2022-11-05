@@ -11,7 +11,6 @@ import (
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"github.com/rwxrob/term"
-	"io/ioutil"
 	url2 "net/url"
 	"os"
 	"path/filepath"
@@ -159,15 +158,20 @@ var ViewCmd = &Z.Cmd{
 				return err
 			}
 			file := filepath.Join(ZetRepo, zet, "README.md")
+			c, err := os.ReadFile(file)
+			if err != nil {
+				return err
+			}
 			r, err := glamour.NewTermRenderer(
 				glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
 			)
 			if err != nil {
 				return err
 			}
-			c, err := ioutil.ReadFile(file)
-			out, err := r.Render(string(c))
-			fmt.Print(out)
+			_, err = r.Render(string(c))
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 		err := z.render(args[0])
@@ -184,15 +188,13 @@ func (z *Zet) render(arg string) error {
 		return err
 	}
 	p := z.GetReadme(filepath.Join(ZetRepo, zet))
-	println(p)
-	println(z.Path)
 	r, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
 	)
 	if err != nil {
 		return err
 	}
-	c, err := ioutil.ReadFile(p)
+	c, err := os.ReadFile(p)
 	out, err := r.Render(string(c))
 	fmt.Print(out)
 	return nil
@@ -525,7 +527,7 @@ func (z *Zet) CreateReadme(r Zet, path string) error {
 func (z *Zet) ReadDir(path string) ([]string, error) {
 	r := regexp.MustCompile(zetRegex)
 	var files []string
-	fileInfo, err := ioutil.ReadDir(path)
+	fileInfo, err := os.ReadDir(path)
 	if err != nil {
 		return files, err
 	}
@@ -563,7 +565,7 @@ func (z *Zet) ChangeDir(path string) error {
 // Last inspects the Zet repo directories (Isosec folders) and returns the
 // most recent directory.
 func (z *Zet) Last() (string, error) {
-	files, _ := ioutil.ReadDir(z.GetRepo())
+	files, _ := os.ReadDir(z.GetRepo())
 	r := regexp.MustCompile(zetRegex)
 	var last string
 	var newest int64 = 0
