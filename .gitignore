@@ -3,3 +3,5 @@ go.work.off
 go.work.sum
 dist
 .idea
+
+dist/
