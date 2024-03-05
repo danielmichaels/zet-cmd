@@ -11,7 +11,6 @@ import (
 	Z "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
 	"github.com/rwxrob/term"
-	"io/ioutil"
 	url2 "net/url"
 	"os"
 	"path/filepath"
@@ -52,7 +51,7 @@ var CreateCmd = &Z.Cmd{
 			**Multi-word titles must be encapsulated within quotations.** 
 `,
 	Other: []Z.Section{
-		{`Examples`, `
+		{Title: `Examples`, Body: `
 					zet create "A New Thing"
 
 					zet c title
@@ -97,7 +96,7 @@ var GetCmd = &Z.Cmd{
 	MinArgs: 1,
 	Dynamic: template.FuncMap{"isosec": func() string { return Isosec() }},
 	Other: []Z.Section{
-		{`Examples`, `zet get {{ isosec }}`},
+		{Title: `Examples`, Body: `zet get {{ isosec }}`},
 	},
 	Usage:    `must provide a zet isosec value`,
 	Commands: []*Z.Cmd{help.Cmd},
@@ -165,8 +164,14 @@ var ViewCmd = &Z.Cmd{
 			if err != nil {
 				return err
 			}
-			c, err := ioutil.ReadFile(file)
+			c, err := os.ReadFile(file)
+			if err != nil {
+				return err
+			}
 			out, err := r.Render(string(c))
+			if err != nil {
+				return err
+			}
 			fmt.Print(out)
 			return nil
 		}
@@ -192,8 +197,15 @@ func (z *Zet) render(arg string) error {
 	if err != nil {
 		return err
 	}
-	c, err := ioutil.ReadFile(p)
+	c, err := os.ReadFile(p)
+	if err != nil {
+		return err
+	}
+
 	out, err := r.Render(string(c))
+	if err != nil {
+		return err
+	}
 	fmt.Print(out)
 	return nil
 }
@@ -246,7 +258,7 @@ var QueryCmd = &Z.Cmd{
 			Must place multi-word search terms inside quotations.
 `,
 	Other: []Z.Section{
-		{`Examples`, `
+		{Title: `Examples`, Body: `
 			zet query "Multi-word must be quoted"
 
 			*Outputs:* https://github.com/danielmichaels/zet/search?q=multi-word+must+be+quoted`,
@@ -445,7 +457,9 @@ func (z *Zet) GetReadme(path string) string { return filepath.Join(path, "README
 func (z *Zet) SearchTags(tag string) (bool, error) {
 	reg := regexp.MustCompile(fmt.Sprintf("(#%s+)", tag))
 	f, _ := os.Open(z.GetReadme(z.Path))
-	defer f.Close()
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
 	s := bufio.NewScanner(f)
 	hit := false
 	for s.Scan() {
@@ -465,7 +479,9 @@ func (z *Zet) SearchTags(tag string) (bool, error) {
 // altered after its initial creation.
 func (z *Zet) GetTitle() error {
 	f, _ := os.Open(z.GetReadme(z.Path))
-	defer f.Close()
+	defer func(f *os.File) {
+		_ = f.Close()
+	}(f)
 	s := bufio.NewScanner(f)
 	var line int
 	for s.Scan() {
@@ -525,7 +541,7 @@ func (z *Zet) CreateReadme(r Zet, path string) error {
 func (z *Zet) ReadDir(path string) ([]string, error) {
 	r := regexp.MustCompile(zetRegex)
 	var files []string
-	fileInfo, err := ioutil.ReadDir(path)
+	fileInfo, err := os.ReadDir(path)
 	if err != nil {
 		return files, err
 	}
@@ -555,7 +571,7 @@ func (z *Zet) CreateDir() (string, error) {
 func (z *Zet) ChangeDir(path string) error {
 	err := os.Chdir(path)
 	if err != nil {
-		return errors.New(fmt.Sprintf("file does not exist %q", path))
+		return fmt.Errorf("file does not exist %q", path)
 	}
 	return nil
 }
@@ -563,7 +579,7 @@ func (z *Zet) ChangeDir(path string) error {
 // Last inspects the Zet repo directories (Isosec folders) and returns the
 // most recent directory.
 func (z *Zet) Last() (string, error) {
-	files, _ := ioutil.ReadDir(z.GetRepo())
+	files, _ := os.ReadDir(z.GetRepo())
 	r := regexp.MustCompile(zetRegex)
 	var last string
 	var newest int64 = 0
@@ -618,7 +634,7 @@ func (z *Zet) CheckZetConfig() error {
 	if err != nil {
 		zetRepo = term.Red + "false" + term.Reset
 	}
-	fmt.Println(term.Blue + "Zet Git Repo Exists: " + term.Reset + fmt.Sprintf("%s", zetRepo))
+	fmt.Println(term.Blue + "Zet Git Repo Exists: " + term.Reset + zetRepo)
 	if zetRepo == term.Red+"false"+term.Reset {
 		fmt.Println(term.Blue + "Zet GitHub Remote: " + term.Red + "Zet repo does not exist on host" + term.Reset)
 		return nil
@@ -632,7 +648,7 @@ func (z *Zet) CheckZetConfig() error {
 	if err != nil {
 		zetRemote = term.Red + "false" + term.Reset
 	}
-	fmt.Println(term.Blue + "Zet GitHub Remote: " + term.Reset + fmt.Sprintf("%s", zetRemote))
+	fmt.Println(term.Blue + "Zet GitHub Remote: " + term.Reset + zetRemote)
 	return nil
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2022 zet-cmd Authors
+// Copyright 2022-2024 zet-cmd Authors
 // SPDX-License-Identifier: Apache-2.0
 
 package zet
@@ -14,8 +14,8 @@ var Cmd = &Z.Cmd{
 
 	Name:      `zet`,
 	Summary:   `zettelkasten commander`,
-	Version:   `v0.2.1`,
-	Copyright: `Copyright 2022 Daniel Michaels`,
+	Version:   `v0.4.0`,
+	Copyright: `Copyright 2022-2024 Daniel Michaels`,
 	License:   `Apache-2.0`,
 	Site:      `danielms.site`,
 	Source:    `git@github.com:danielmichaels/zet-cmd.git`,
