@@ -1,4 +1,4 @@
-// Copyright 2022 zet-cmd Authors
+// Copyright 2022-2024 zet-cmd Authors
 // SPDX-License-Identifier: Apache-2.0
 
 package main
