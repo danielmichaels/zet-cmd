@@ -3,9 +3,11 @@ module github.com/danielmichaels/zet-cmd
 go 1.18
 
 require (
+	github.com/charmbracelet/glamour v0.5.0
 	github.com/rwxrob/bonzai v0.12.2
 	github.com/rwxrob/conf v0.6.3
 	github.com/rwxrob/help v0.4.2
+	github.com/rwxrob/term v0.2.6
 	github.com/rwxrob/vars v0.3.2
 )
 
@@ -13,7 +15,6 @@ require (
 	github.com/a8m/envsubst v1.3.0 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
-	github.com/charmbracelet/glamour v0.5.0 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/elliotchance/orderedmap v1.4.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
@@ -37,7 +38,6 @@ require (
 	github.com/rwxrob/fs v0.5.1 // indirect
 	github.com/rwxrob/scan v0.6.1 // indirect
 	github.com/rwxrob/structs v0.6.0 // indirect
-	github.com/rwxrob/term v0.2.6 // indirect
 	github.com/rwxrob/to v0.5.2 // indirect
 	github.com/rwxrob/yq v0.2.4 // indirect
 	github.com/timtadh/data-structures v0.5.3 // indirect
