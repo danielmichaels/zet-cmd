@@ -184,13 +184,11 @@ var ViewCmd = &Z.Cmd{
 }
 
 func (z *Zet) render(arg string) error {
-	zet, err := z.searchScanner(arg)
+	err := z.searchScanner(arg)
 	if err != nil {
 		return err
 	}
-	p := z.GetReadme(filepath.Join(ZetRepo, zet))
-	println(p)
-	println(z.Path)
+	p := z.GetReadme(filepath.Join(ZetRepo, z.Path))
 	r, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
 	)

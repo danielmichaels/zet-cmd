@@ -123,38 +123,38 @@ func (z *Zet) openZetForEdit(zet string) error {
 	return nil
 }
 func (z *Zet) edit(args ...string) error {
-	zet, err := z.searchScanner(args[0])
+	err := z.searchScanner(args[0])
 	if err != nil {
 		return err
 	}
-	err = z.openZetForEdit(zet)
+	err = z.openZetForEdit(z.Path)
 	if err != nil {
 		return err
 	}
-	err = z.scanAndCommit(zet)
+	err = z.scanAndCommit(z.Path)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (z *Zet) searchScanner(args ...string) (string, error) {
+func (z *Zet) searchScanner(args ...string) error {
 	err := z.ChangeDir(ZetRepo)
 	if err != nil {
-		return "", err
+		return err
 	}
 	dir, _ := os.Getwd()
 	files, err := z.ReadDir(dir)
 	if err != nil {
-		return "", err
+		return err
 	}
 	titles, err := z.FindTitles(files)
 	if err != nil {
-		return "", err
+		return err
 	}
 	results, err := z.SearchTitles(args[0], titles)
 	if err != nil {
-		return "", err
+		return err
 	}
 	var ff []Found
 	for idx, v := range results {
@@ -182,12 +182,13 @@ func (z *Zet) searchScanner(args ...string) (string, error) {
 	for _, k := range ff {
 		if s == k.Index {
 			zet = k.Id
+			z.Path = k.Id
+			z.Title = k.Title
 		}
 	}
 	if zet == "" {
 		fmt.Println("Key entered does not match, or zet could not be found")
 		os.Exit(0)
 	}
-
-	return zet, nil
+	return nil
 }
