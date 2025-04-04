@@ -1,9 +1,75 @@
-// Copyright 2022-2024 zet-cmd Authors
-// SPDX-License-Identifier: Apache-2.0
-
 package main
 
-import "github.com/danielmichaels/zet-cmd"
+import (
+	"fmt"
+	"github.com/danielmichaels/zet-cmd"
+	"github.com/danielmichaels/zet-cmd/internal/version"
+	"os"
 
-// tree grown from branch
-func main() { zet.Cmd.Run() }
+	"github.com/alecthomas/kong"
+)
+
+const appName = "zet"
+
+type VersionFlag string
+
+func (v VersionFlag) Decode(_ *kong.DecodeContext) error { return nil }
+func (v VersionFlag) IsBool() bool                       { return true }
+func (v VersionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
+	fmt.Println(vars["version"])
+	app.Exit(0)
+	return nil
+}
+
+type CLI struct {
+	Version VersionFlag `help:"Print version information and quit" name:"version"`
+	zet.Globals
+
+	// Commands
+	Create zet.CreateCmd `cmd:"" aliases:"new" help:"Create a new zet"`
+	Last   zet.LastCmd   `cmd:"" help:"Show the last created zet"`
+	Edit   zet.EditCmd   `cmd:"" help:"Edit a zet"`
+	Find   zet.FindCmd   `cmd:"" help:"Search for a zet title and retrieve any matching entry"`
+	//Get    GetCmd    `cmd:"" help:"Get a zettel by ID"`
+	//Query  QueryCmd  `cmd:"" help:"Query zettelkasten"`
+	//Find   FindCmd   `cmd:"" help:"Find zettels by content"`
+	Check   zet.CheckCmd   `cmd:"" help:"Check zettelkasten for issues"`
+	Tags    zet.TagsCmd    `cmd:"" help:"Search for a zet by tag and retrieve any entries with that tag"`
+	Git     zet.GitCmd     `cmd:"" help:"Git operations for zettelkasten"`
+	View    zet.ViewCmd    `cmd:"" help:"View supports both direct 'isosec' lookup's and keyword searches"`
+	ViewAll zet.ViewAllCmd `cmd:"" help:"Output all zet entries from the local git repo"`
+}
+
+func run() error {
+	ver := version.Get()
+	if ver == "unavailable" {
+		ver = "development"
+	}
+	cli := CLI{
+		Version: VersionFlag(ver),
+	}
+	// Display help if no args are provided instead of an error message
+	if len(os.Args) < 2 {
+		os.Args = append(os.Args, "--help")
+	}
+
+	ctx := kong.Parse(&cli,
+		kong.Name(appName),
+		kong.Description(fmt.Sprintf("%s is a DNS security tool", appName)),
+		kong.UsageOnError(),
+		kong.ConfigureHelp(kong.HelpOptions{
+			Compact: true,
+		}),
+		kong.DefaultEnvars(appName),
+		kong.Vars{
+			"version": string(cli.Version),
+		})
+	err := ctx.Run(cli.Globals)
+	ctx.FatalIfErrorf(err)
+	return nil
+}
+func main() {
+	if err := run(); err != nil {
+		os.Exit(1)
+	}
+}
