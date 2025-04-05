@@ -3,36 +3,44 @@ package zet
 import (
 	"errors"
 	"fmt"
-	Z "github.com/rwxrob/bonzai/z"
-	"github.com/rwxrob/help"
-	"github.com/rwxrob/term"
+	"github.com/danielmichaels/zet-cmd/internal/term"
 	"os"
 )
 
-var GitCmd = &Z.Cmd{
-	Name:     `git`,
-	Summary:  `run git commands over the zet repo`,
-	MinArgs:  1,
-	Usage:    `must provide a git command`,
-	Commands: []*Z.Cmd{help.Cmd, gitPull},
+type GitCmd struct {
+	Operation string `arg:"" help:"git command to run" enum:"pull,status,push,log,stash,stash-pop,lazygit,lg"`
 }
 
-var gitPull = &Z.Cmd{
-	Name:     `pull`,
-	Summary:  `retrieve upstream latest commits`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return err
-		}
-		err = Z.Exec("git", "pull")
-		if err != nil {
-			return err
-		}
-		return nil
-	},
+func (c *GitCmd) Run() error {
+	z := new(Zet)
+	err := z.ChangeDir(z.GetRepo())
+	if err != nil {
+		return err
+	}
+
+	var cmdArgs []string
+	switch c.Operation {
+	case "pull":
+		cmdArgs = []string{"git", "pull"}
+	case "status":
+		cmdArgs = []string{"git", "status"}
+	case "push":
+		cmdArgs = []string{"git", "push"}
+	case "log":
+		cmdArgs = []string{"git", "log"}
+	case "stash":
+		cmdArgs = []string{"git", "stash"}
+	case "stash-pop":
+		cmdArgs = []string{"git", "stash", "pop"}
+	case "lazygit", "lg":
+		cmdArgs = []string{"lazygit"}
+	default:
+		return errors.New("invalid git command")
+	}
+	if err := term.Exec(cmdArgs...); err != nil {
+		return err
+	}
+	return nil
 }
 
 // scanAndCommit checks that the user wants to commit their work to the VCS
@@ -82,15 +90,17 @@ func (z *Zet) GitRemote() error {
 	if os.Getenv("GIT_REMOTE") != "" {
 		return nil
 	}
-	s := Z.Out("git", "remote", "-v")
+	s := term.Out("git", "remote", "-v")
 	if s == "" {
 		return errors.New("no git remote found")
 	}
 	return nil
 }
 
+// Pull changes the current directory to the repository, verifies the git remote, and pulls the latest changes
+// from the remote repository with quiet output.
 func (z *Zet) Pull() error {
-	err := z.ChangeDir(ZetRepo)
+	err := z.ChangeDir(Repo)
 	if err != nil {
 		return err
 	}
@@ -98,31 +108,35 @@ func (z *Zet) Pull() error {
 	if err != nil {
 		return err
 	}
-	err = Z.Exec("git", "pull", "-q")
+	err = term.Exec("git", "pull", "-q")
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// Add stages all files in the Zet's path to the git repository by changing to the repository directory
+// and executing a git add command with the all (-A) flag.
 func (z *Zet) Add() error {
-	err := z.ChangeDir(ZetRepo)
+	err := z.ChangeDir(Repo)
 	if err != nil {
 		return err
 	}
-	err = Z.Exec("git", "add", "-A", z.Path)
+	err = term.Exec("git", "add", "-A", z.Path)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// Commit stages and commits the current changes in the Zet repository with the Zet's title as the commit message.
+// It changes the current directory to the repository, executes a git commit command, and prints a confirmation message.
 func (z *Zet) Commit() error {
-	err := z.ChangeDir(ZetRepo)
+	err := z.ChangeDir(Repo)
 	if err != nil {
 		return err
 	}
-	err = Z.Exec("git", "commit", "-m", z.Title)
+	err = term.Exec("git", "commit", "-m", z.Title)
 	if err != nil {
 		return err
 	}
@@ -130,8 +144,10 @@ func (z *Zet) Commit() error {
 	return nil
 }
 
+// Push changes the current directory to the repository, verifies the git remote, and pushes the current branch
+// to the remote repository with quiet output.
 func (z *Zet) Push() error {
-	err := z.ChangeDir(ZetRepo)
+	err := z.ChangeDir(Repo)
 	if err != nil {
 		return err
 	}
@@ -139,7 +155,7 @@ func (z *Zet) Push() error {
 	if err != nil {
 		return err
 	}
-	err = Z.Exec("git", "push", "--quiet")
+	err = term.Exec("git", "push", "--quiet")
 	if err != nil {
 		return err
 	}

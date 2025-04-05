@@ -8,15 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/charmbracelet/glamour"
-	Z "github.com/rwxrob/bonzai/z"
-	"github.com/rwxrob/help"
-	"github.com/rwxrob/term"
-	url2 "net/url"
+	"github.com/danielmichaels/zet-cmd/internal/term"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -30,157 +26,18 @@ var (
 	Editor      = os.Getenv("EDITOR")
 	GitUser     = os.Getenv("GITUSER")
 	RepoName    = "zet"
-	ZetRepo     = filepath.Join(os.Getenv("ZETDIR"))
+	Repo        = filepath.Join(os.Getenv("ZETDIR"))
 	Pictures    = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Screenshots = filepath.Join(os.Getenv("HOME"), "Pictures", "zet")
 	Downloads   = filepath.Join(os.Getenv("HOME"), "Downloads")
 )
 
-var CreateCmd = &Z.Cmd{
-	Name:    `create`,
-	Aliases: []string{"new", "c"},
-	Summary: `Create a new zet`,
-	Dynamic: template.FuncMap{"editor": func() string { return Editor }},
-	Description: `
-			Create a new zettelkasten entry by passing in the title as the only argument.
-
-			This will then create a new README.md in a directory with
-			an *isosec* timestamp as its name and use the system editor 
-			({{ editor }}) to drop you into the file.
-
-			**Multi-word titles must be encapsulated within quotations.** 
-`,
-	Other: []Z.Section{
-		{Title: `Examples`, Body: `
-					zet create "A New Thing"
-
-					zet c title
-`},
-	},
-	Commands: []*Z.Cmd{help.Cmd},
-	Usage:    `must provide a title for each zet`,
-	MinArgs:  1,
-	MaxArgs:  1,
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := Zet{Title: args[0]}
-
-		dir, err := z.CreateDir()
-		if err != nil {
-			return err
-		}
-		z.Path = dir
-
-		err = z.CreateReadme(z, dir)
-		if err != nil {
-			return err
-		}
-
-		// Drop into vim and write Zet contents
-		zet := z.GetReadme(z.Path)
-		err = Z.Exec(Editor, zet)
-		if err != nil {
-			return err
-		}
-		err = z.scanAndCommit(z.Path)
-		if err != nil {
-			return err
-		}
-		return nil
-	},
-}
-
-var GetCmd = &Z.Cmd{
-	Name:    `get`,
-	Aliases: []string{"g"},
-	Summary: `Retrieve a zet for editing`,
-	MinArgs: 1,
-	Dynamic: template.FuncMap{"isosec": func() string { return Isosec() }},
-	Other: []Z.Section{
-		{Title: `Examples`, Body: `zet get {{ isosec }}`},
-	},
-	Usage:    `must provide a zet isosec value`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		zet, err := z.GetZet(args[0])
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s", zet)
-
-		return nil
-	},
-}
-
-var LastCmd = &Z.Cmd{
-	Name:    `last`,
-	Aliases: []string{"l", "latest"},
-	Summary: `Get the most recent zet isosec and print it screen`,
-	Description: `
-			Prints the last modified zet entry's isosec value
-`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return err
-		}
-
-		last, err := z.Last()
-		if err != nil {
-			return err
-		}
-		z.Latest = last
-		fmt.Printf("%s", z.Latest)
-		return nil
-	},
-}
-
-var ViewCmd = &Z.Cmd{
-	Name:    `view`,
-	Aliases: []string{"v"},
-	Summary: `view command for zet entries.`,
-	Description: `
-			View supports both direct 'isosec' lookup's and keyword searches. 
-
-			If a valid entry is found the markdown will be rendered in the terminal.
-`,
-	Commands: []*Z.Cmd{help.Cmd, viewAll},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		r := regexp.MustCompile(zetRegex)
-
-		if r.MatchString(args[0]) {
-			// Allow render of specific isosec
-			zet, err := z.GetZet(args[0])
-			if err != nil {
-				return err
-			}
-			file := filepath.Join(ZetRepo, zet, "README.md")
-			r, err := glamour.NewTermRenderer(
-				glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
-			)
-			if err != nil {
-				return err
-			}
-			c, err := os.ReadFile(file)
-			if err != nil {
-				return err
-			}
-			out, err := r.Render(string(c))
-			if err != nil {
-				return err
-			}
-			fmt.Print(out)
-			return nil
-		}
-		err := z.render(args[0])
-		if err != nil {
-			return err
-		}
-		return nil
-	},
+// Zet is the struct to hang methods from which are used to create, edit, find
+// and delete Zet's.
+type Zet struct {
+	Title  string
+	Path   string
+	Latest string
 }
 
 func (z *Zet) render(arg string) error {
@@ -188,7 +45,7 @@ func (z *Zet) render(arg string) error {
 	if err != nil {
 		return err
 	}
-	p := z.GetReadme(filepath.Join(ZetRepo, z.Path))
+	p := z.GetReadme(filepath.Join(Repo, z.Path))
 	r, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(), glamour.WithWordWrap(zetWordWrap),
 	)
@@ -206,165 +63,6 @@ func (z *Zet) render(arg string) error {
 	}
 	fmt.Print(out)
 	return nil
-}
-
-var viewAll = &Z.Cmd{
-	Name:    `all`,
-	Summary: `view all zet entries`,
-	Description: `
-			Output all zet entries from the local git repo.
-			
-			To view the response in the system pager ({{ pager }}) you must
-			pipe the response using the terminal.
-				
-
-			**zet view all | {{ pager }}**
-`,
-	Dynamic: template.FuncMap{
-		"pager": func() string { return Pager },
-	},
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return err
-		}
-		dir, _ := os.Getwd()
-		files, err := z.ReadDir(dir)
-		if err != nil {
-			return err
-		}
-		titles, err := z.FindTitles(files)
-		if err != nil {
-			return err
-		}
-		for _, v := range titles {
-			fmt.Println(v.Id, v.Title)
-		}
-		return nil
-	},
-}
-
-var QueryCmd = &Z.Cmd{
-	Name:    `query`,
-	Aliases: []string{"q"},
-	Summary: `create a searchable URL with a query string`,
-	Description: `
-			Create a URL with a search term for the remote git hosting provider.
-			
-			Must place multi-word search terms inside quotations.
-`,
-	Other: []Z.Section{
-		{Title: `Examples`, Body: `
-			zet query "Multi-word must be quoted"
-
-			*Outputs:* https://github.com/danielmichaels/zet/search?q=multi-word+must+be+quoted`,
-		},
-	},
-	MinArgs:  1,
-	MaxArgs:  1,
-	Usage:    `must provide a search term`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		term := url2.QueryEscape(args[0])
-		url := fmt.Sprintf("https://github.com/%s/%s/search?q=%s", GitUser, RepoName, strings.ToLower(term))
-		fmt.Println(url)
-		return nil
-	},
-}
-
-var FindCmd = &Z.Cmd{
-	Name:    `find`,
-	Aliases: []string{"f"},
-	Summary: `Find a zet title by search term`,
-	Description: `
-			Search for a zet by title and retrieve any entries with that term
-			in the title.
-			Also captures partial matches, so "go" will find "golang".
-			
-			Only prints entries to the terminal.
-`,
-	MinArgs:  1,
-	MaxArgs:  1,
-	Usage:    `must provide a search term`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return err
-		}
-		dir, _ := os.Getwd()
-		files, err := z.ReadDir(dir)
-		if err != nil {
-			return err
-		}
-		titles, err := z.FindTitles(files)
-		if err != nil {
-			return err
-		}
-		results, err := z.SearchTitles(args[0], titles)
-		if err != nil {
-			return err
-		}
-		for _, v := range results {
-			fmt.Println(v.Id, v.Title)
-		}
-		return nil
-	},
-}
-
-var TagsCmd = &Z.Cmd{
-	Name:    `tags`,
-	Aliases: []string{"t"},
-	Summary: `Find zet(s) by tag'`,
-	Description: `
-			Search for a zet by tag and retrieve any entries with that tag.
-			Also captures partial matches, so "go" will find "golang".
-			
-			Only prints entries to the terminal.
-`,
-	MinArgs:  1,
-	MaxArgs:  1,
-	Usage:    `must provide a search term`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return err
-		}
-		dir, _ := os.Getwd()
-		files, err := z.ReadDir(dir)
-		if err != nil {
-			return err
-		}
-		results, err := z.FindTags(args[0], files)
-		if err != nil {
-			return err
-		}
-		for _, v := range results {
-			fmt.Println(v.Id, v.Title)
-		}
-
-		return nil
-	},
-}
-
-var CheckCmd = &Z.Cmd{
-	Name:     `check`,
-	Summary:  `check environment variables and configuration`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(caller *Z.Cmd, args ...string) error {
-		z := new(Zet)
-		err := z.CheckZetConfig()
-		if err != nil {
-			return err
-		}
-		return nil
-	},
 }
 
 // FindTags takes a tag and array of files and then searches the files for the
@@ -435,16 +133,8 @@ func (z *Zet) SearchTitles(query string, titles []Title) ([]Title, error) {
 	return results, nil
 }
 
-// Zet is the struct to hang methods from which are used to create, edit, find
-// and delete Zet's.
-type Zet struct {
-	Title  string
-	Path   string
-	Latest string
-}
-
 // GetRepo returns the GitRepo and RepoName as a filepath.
-func (z *Zet) GetRepo() string { return ZetRepo }
+func (z *Zet) GetRepo() string { return Repo }
 
 // GetReadme returns a filepath with README.md appended using a filepath join. This
 // is used to retrieve the full path to the README.md being written to or read from.
@@ -556,7 +246,7 @@ func (z *Zet) ReadDir(path string) ([]string, error) {
 // CreateDir creates a directory inside the zet repository using the Isosec
 // function to create the directory using the returned timestamp.
 func (z *Zet) CreateDir() (string, error) {
-	path := filepath.Join(ZetRepo, Isosec())
+	path := filepath.Join(Repo, Isosec())
 	err := mkdir(path)
 	if err != nil {
 		return "", err
@@ -596,7 +286,7 @@ func (z *Zet) Last() (string, error) {
 		}
 	}
 	// Set path on Zet now as its used everywhere
-	z.Path = filepath.Join(ZetRepo, last)
+	z.Path = filepath.Join(Repo, last)
 	return last, nil
 }
 
@@ -618,7 +308,7 @@ func (z *Zet) CheckZetConfig() error {
 	}
 	fmt.Println(term.Blue + "Repos Variable: " + term.Reset + REPOS)
 	fmt.Println(term.Blue + "GitUser: " + term.Reset + GitUser)
-	fmt.Println(term.Blue + "ZetRepo: " + term.Reset + ZetRepo)
+	fmt.Println(term.Blue + "Repo: " + term.Reset + Repo)
 	fmt.Println(term.Blue + "System Zet Repo: " + term.Reset + z.GetRepo())
 	// Future use case info
 	fmt.Println(term.U + term.Yellow + "Utility Directories" + term.Reset)
