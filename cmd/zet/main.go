@@ -27,17 +27,13 @@ type CLI struct {
 
 	// Commands
 	Create zet.CreateCmd `cmd:"" aliases:"new" help:"Create a new zet"`
-	Last   zet.LastCmd   `cmd:"" help:"Show the last created zet"`
+	Last   zet.LastCmd   `cmd:"" help:"Show the last created zet's isosec (location)'"`
 	Edit   zet.EditCmd   `cmd:"" help:"Edit a zet"`
 	Find   zet.FindCmd   `cmd:"" help:"Search for a zet title and retrieve any matching entry"`
-	//Get    GetCmd    `cmd:"" help:"Get a zettel by ID"`
-	//Query  QueryCmd  `cmd:"" help:"Query zettelkasten"`
-	//Find   FindCmd   `cmd:"" help:"Find zettels by content"`
-	Check   zet.CheckCmd   `cmd:"" help:"Check zettelkasten for issues"`
-	Tags    zet.TagsCmd    `cmd:"" help:"Search for a zet by tag and retrieve any entries with that tag"`
-	Git     zet.GitCmd     `cmd:"" help:"Git operations for zettelkasten"`
-	View    zet.ViewCmd    `cmd:"" help:"View supports both direct 'isosec' lookup's and keyword searches"`
-	ViewAll zet.ViewAllCmd `cmd:"" help:"Output all zet entries from the local git repo"`
+	Check  zet.CheckCmd  `cmd:"" help:"Check zettelkasten for issues"`
+	Tags   zet.TagsCmd   `cmd:"" help:"Search for a zet by tag and retrieve any entries with that tag"`
+	Git    zet.GitCmd    `cmd:"" help:"Git operations for zettelkasten"`
+	View   zet.ViewCmd   `cmd:"" help:"View supports both direct 'isosec' lookup's and keyword searches"`
 }
 
 func run() error {
@@ -55,7 +51,7 @@ func run() error {
 
 	ctx := kong.Parse(&cli,
 		kong.Name(appName),
-		kong.Description(fmt.Sprintf("%s is a DNS security tool", appName)),
+		kong.Description(fmt.Sprintf("%s is a zettelkasten tool", appName)),
 		kong.UsageOnError(),
 		kong.ConfigureHelp(kong.HelpOptions{
 			Compact: true,

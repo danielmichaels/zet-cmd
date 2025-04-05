@@ -11,6 +11,10 @@ import (
 	"os/exec"
 )
 
+func init() {
+	SetInteractive(DetectInteractive())
+}
+
 var (
 	Reset      string
 	Bright     string
@@ -76,6 +80,15 @@ func Prompt(form string, args ...any) string {
 var interactive bool
 
 func IsInteractive() bool { return interactive }
+
+// DetectInteractive returns true if the output is to an interactive
+// terminal (not piped in any way).
+func DetectInteractive() bool {
+	if f, _ := os.Stdout.Stat(); (f.Mode() & os.ModeCharDevice) != 0 {
+		return true
+	}
+	return false
+}
 
 // Read reads a single line of input and chomps the \r?\n. Also see
 // ReadHidden.

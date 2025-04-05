@@ -64,41 +64,20 @@ func (c *LastCmd) Run() error {
 }
 
 type EditCmd struct {
-	Isosec string `help:"Enter a valid isosec value (e.g. 20220424000235) and it will be opened using your system editor"`
-	Last   bool   `help:"Open most recent zet using system editor"`
+	Search EditSearchCmd `cmd:"" help:"Search for a zet note to edit"`
+	Last   EditLastCmd   `cmd:"" help:"Open most recent zet using system editor"`
 }
 
-func (c *EditCmd) Run() error {
+type EditSearchCmd struct {
+	Search string `arg:"" help:"Search for a zet note"`
+}
+
+func (c *EditSearchCmd) Run() error {
 	z := new(Zet)
-
-	if c.Last {
-		err := z.ChangeDir(z.GetRepo())
-		if err != nil {
-			return err
-		}
-
-		last, err := z.Last()
-		if err != nil {
-			return err
-		}
-
-		err = z.openZetForEdit(last)
-		if err != nil {
-			return err
-		}
-
-		err = z.scanAndCommit(last)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
 	r := regexp.MustCompile(zetRegex)
 
-	if r.MatchString(c.Isosec) {
-		zet, err := z.GetZet(c.Isosec)
+	if r.MatchString(c.Search) {
+		zet, err := z.GetZet(c.Search)
 		if err != nil {
 			return err
 		}
@@ -113,10 +92,37 @@ func (c *EditCmd) Run() error {
 		}
 		return nil
 	}
-	err := z.edit(c.Isosec)
+	err := z.edit(c.Search)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+type EditLastCmd struct{}
+
+func (c *EditLastCmd) Run() error {
+	z := new(Zet)
+	err := z.ChangeDir(z.GetRepo())
+	if err != nil {
+		return err
+	}
+
+	last, err := z.Last()
+	if err != nil {
+		return err
+	}
+
+	err = z.openZetForEdit(last)
+	if err != nil {
+		return err
+	}
+
+	err = z.scanAndCommit(last)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -177,16 +183,20 @@ func (c *TagsCmd) Run() error {
 }
 
 type ViewCmd struct {
-	Query string `arg:"" help:"Query to search"`
+	Search ViewSearchCmd `cmd:"" help:"View a zet by searching for strings or isosec e.g. 20220424000235"`
+	All    ViewAllCmd    `cmd:"" help:"View all zets"`
 }
 
-func (c *ViewCmd) Run() error {
+type ViewSearchCmd struct {
+	Search string `arg:"" help:"View a zet by searching for strings or isosec e.g. 20220424000235"`
+}
+
+func (c *ViewSearchCmd) Run() error {
 	z := new(Zet)
 	r := regexp.MustCompile(zetRegex)
 
-	if r.MatchString(c.Query) {
-		// Allow render of specific isosec
-		zet, err := z.GetZet(c.Query)
+	if r.MatchString(c.Search) {
+		zet, err := z.GetZet(c.Search)
 		if err != nil {
 			return err
 		}
@@ -208,7 +218,7 @@ func (c *ViewCmd) Run() error {
 		fmt.Print(out)
 		return nil
 	}
-	err := z.render(c.Query)
+	err := z.render(c.Search)
 	if err != nil {
 		return err
 	}
